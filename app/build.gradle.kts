@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -69,22 +68,13 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
-    // PDF generation
-    implementation(libs.itext.core)
+    // PDF generation (iText 7)
+    implementation(libs.itext.kernel)
+    implementation(libs.itext.layout)
 
     // Image loading
     implementation(libs.coil.compose)
 
-    // Room
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-
-    // DataStore
-    implementation(libs.androidx.datastore.preferences)
-
-    // WorkManager
-    implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

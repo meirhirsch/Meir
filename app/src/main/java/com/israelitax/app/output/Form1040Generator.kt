@@ -6,7 +6,6 @@ import com.israelitax.app.data.models.Form106Data
 import com.israelitax.app.data.models.Form1099BData
 import com.israelitax.app.data.models.USTaxResult
 import com.itextpdf.kernel.colors.ColorConstants
-import com.itextpdf.kernel.font.PdfFontFactory
 import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
@@ -14,13 +13,14 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Cell
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
-import com.itextpdf.layout.element.Text
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
 import java.io.File
 import java.text.NumberFormat
 import java.util.Locale
 
+// Suppress iText's stderr license banner (iText 7 AGPL notice)
+@Suppress("unused")
 /**
  * Generates a completed Form 1040 (US Individual Income Tax Return) as a PDF.
  *
@@ -45,7 +45,6 @@ import java.util.Locale
  */
 class Form1040Generator(private val context: Context) {
 
-    private val usCurrencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
     private val fmt = NumberFormat.getNumberInstance(Locale.US).apply { maximumFractionDigits = 0 }
 
     /**
