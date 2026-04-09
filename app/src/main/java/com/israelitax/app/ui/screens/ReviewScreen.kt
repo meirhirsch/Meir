@@ -1,5 +1,6 @@
 package com.israelitax.app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,8 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.israelitax.app.data.models.FilingStatus
+import com.israelitax.app.data.models.Form106Data
 import com.israelitax.app.ui.viewmodels.TaxUiState
 import com.israelitax.app.ui.viewmodels.TaxViewModel
 
@@ -37,12 +40,44 @@ fun ReviewScreen(
     var useFEIE        by remember { mutableStateOf(false) }
     var statusExpanded by remember { mutableStateOf(false) }
 
+    // ── Form 106 manual entry fields (pre-filled from OCR) ───────────────────
+    val f106 = uiState.form106
+    val ocrOk = (f106?.grossIncome ?: 0.0) > 0
+    var editExpanded by remember { mutableStateOf(!ocrOk) }   // auto-open if OCR failed
+
+    var f106Year      by remember { mutableStateOf(f106?.taxYear?.takeIf { it > 0 }?.toString() ?: "2025") }
+    var f106Employer  by remember { mutableStateOf(f106?.employerName ?: "") }
+    var f106Gross     by remember { mutableStateOf(f106?.grossIncome?.toAmtStr() ?: "") }
+    var f106TaxWhd    by remember { mutableStateOf(f106?.incomeTaxWithheld?.toAmtStr() ?: "") }
+    var f106BL        by remember { mutableStateOf(f106?.bituachLeumiEmployee?.toAmtStr() ?: "") }
+    var f106Health    by remember { mutableStateOf(f106?.healthInsurance?.toAmtStr() ?: "") }
+    var f106Pension   by remember { mutableStateOf(f106?.pensionEmployee?.toAmtStr() ?: "") }
+    var f106StudyFund by remember { mutableStateOf(f106?.studyFund?.toAmtStr() ?: "") }
+    var f106CreditPts by remember { mutableStateOf(f106?.taxCreditsPoints?.takeIf { it > 0 }?.toString() ?: "2.25") }
+
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(uiState.error) {
         uiState.error?.let { snackbar.showSnackbar(it); viewModel.clearError() }
     }
     LaunchedEffect(uiState.usTaxResult) {
         if (uiState.usTaxResult != null) onNavigateToResults()
+    }
+
+    // Effective Form 106 — uses manual fields when any non-zero value entered
+    fun effectiveForm106(): Form106Data {
+        val gross = f106Gross.toD()
+        return (f106 ?: Form106Data()).copy(
+            taxYear = f106Year.toIntOrNull() ?: 2025,
+            employerName = f106Employer,
+            grossIncome = if (gross > 0) gross else (f106?.grossIncome ?: 0.0),
+            taxableIncome = if (gross > 0) gross else (f106?.taxableIncome ?: 0.0),
+            incomeTaxWithheld = f106TaxWhd.toD().takeIf { it > 0 } ?: (f106?.incomeTaxWithheld ?: 0.0),
+            bituachLeumiEmployee = f106BL.toD().takeIf { it > 0 } ?: (f106?.bituachLeumiEmployee ?: 0.0),
+            healthInsurance = f106Health.toD().takeIf { it > 0 } ?: (f106?.healthInsurance ?: 0.0),
+            pensionEmployee = f106Pension.toD().takeIf { it > 0 } ?: (f106?.pensionEmployee ?: 0.0),
+            studyFund = f106StudyFund.toD().takeIf { it > 0 } ?: (f106?.studyFund ?: 0.0),
+            taxCreditsPoints = f106CreditPts.toDoubleOrNull()?.takeIf { it > 0 } ?: (f106?.taxCreditsPoints?.takeIf { it > 0 } ?: 2.25)
+        )
     }
 
     Scaffold(
@@ -70,25 +105,122 @@ fun ReviewScreen(
         ) {
             StepIndicator(listOf("Upload Docs", "Review", "Generate Forms"), currentStep = 1)
 
-            // ── Form 106 summary ─────────────────────────────────────────────
-            val f106 = uiState.form106
-            SummaryCard(
-                title = "טופס 106 — Israeli Salary",
-                icon = Icons.Default.Work,
-                ok = (f106?.grossIncome ?: 0.0) > 0
-            ) {
-                if (f106 != null && f106.grossIncome > 0) {
-                    SummaryRow("Employer", f106.employerName.ifBlank { "—" })
-                    SummaryRow("Tax Year", f106.taxYear.takeIf { it > 0 }?.toString() ?: "2025")
-                    SummaryRow("Gross Income", "₪${"%,.0f".format(f106.grossIncome)}")
-                    SummaryRow("Income Tax Withheld", "₪${"%,.0f".format(f106.incomeTaxWithheld)}")
-                    SummaryRow("Bituach Leumi", "₪${"%,.0f".format(f106.bituachLeumiEmployee)}")
-                } else {
-                    Text(
-                        "OCR could not read Form 106. Go back and try a clearer photo or PDF.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
+            // ── Form 106 card ─────────────────────────────────────────────────
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    // Header row
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.Work, null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp))
+                        Text("טופס 106 — Israeli Salary",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f))
+                        Icon(
+                            if (ocrOk) Icons.Default.CheckCircle else Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = if (ocrOk) Color(0xFF2E7D32) else Color(0xFFE65100),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    HorizontalDivider()
+
+                    // OCR summary (when it worked)
+                    if (ocrOk && !editExpanded) {
+                        SummaryRow("Employer", f106?.employerName?.ifBlank { "—" } ?: "—")
+                        SummaryRow("Tax Year", f106?.taxYear?.takeIf { it > 0 }?.toString() ?: "2025")
+                        SummaryRow("Gross Income", "₪${"%,.0f".format(f106?.grossIncome ?: 0.0)}")
+                        SummaryRow("Income Tax Withheld", "₪${"%,.0f".format(f106?.incomeTaxWithheld ?: 0.0)}")
+                        SummaryRow("Bituach Leumi", "₪${"%,.0f".format(f106?.bituachLeumiEmployee ?: 0.0)}")
+                    }
+
+                    // Expand/collapse button
+                    TextButton(
+                        onClick = { editExpanded = !editExpanded },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            if (editExpanded) Icons.Default.ExpandLess else Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            when {
+                                !ocrOk       -> "Enter Form 106 values manually"
+                                editExpanded -> "Hide manual entry"
+                                else         -> "Correct scanned values"
+                            },
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+
+                    // Manual entry fields
+                    AnimatedVisibility(visible = editExpanded) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (!ocrOk) {
+                                Card(colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFFFF3E0)
+                                )) {
+                                    Row(modifier = Modifier.padding(10.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.Top) {
+                                        Icon(Icons.Default.Info, null,
+                                            tint = Color(0xFFE65100),
+                                            modifier = Modifier.size(16.dp))
+                                        Text(
+                                            "OCR could not read your Form 106. " +
+                                            "Enter the values from your paper form below. " +
+                                            "All amounts in ₪ (Israeli Shekel).",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color(0xFFBF360C)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                F106Field("Tax Year", f106Year, { f106Year = it },
+                                    KeyboardType.Number, Modifier.weight(1f))
+                                F106Field("Employer", f106Employer, { f106Employer = it },
+                                    KeyboardType.Text, Modifier.weight(2f))
+                            }
+                            F106Field(
+                                label = "Gross Income ₪  (Code 158 — הכנסה ברוטו)",
+                                value = f106Gross, onValue = { f106Gross = it },
+                                warn = f106Gross.toD() == 0.0
+                            )
+                            F106Field(
+                                label = "Income Tax Withheld ₪  (Code 042 — מס הכנסה)",
+                                value = f106TaxWhd, onValue = { f106TaxWhd = it }
+                            )
+                            F106Field(
+                                label = "Bituach Leumi – Employee ₪  (Code 045 — ביטוח לאומי)",
+                                value = f106BL, onValue = { f106BL = it }
+                            )
+                            F106Field(
+                                label = "Health Insurance ₪  (Code 047 — ביטוח בריאות)",
+                                value = f106Health, onValue = { f106Health = it }
+                            )
+                            F106Field(
+                                label = "Pension – Employee ₪  (Code 043 — פנסיה עובד)",
+                                value = f106Pension, onValue = { f106Pension = it }
+                            )
+                            F106Field(
+                                label = "Study Fund ₪  (Code 048 — קרן השתלמות)",
+                                value = f106StudyFund, onValue = { f106StudyFund = it }
+                            )
+                            F106Field(
+                                label = "Credit Points  (נקודות זיכוי — 2.25 for single resident)",
+                                value = f106CreditPts, onValue = { f106CreditPts = it },
+                                keyboard = KeyboardType.Decimal
+                            )
+                        }
+                    }
                 }
             }
 
@@ -147,8 +279,7 @@ fun ReviewScreen(
                         label = { Text("US Social Security Number (XXX-XX-XXXX)") },
                         leadingIcon = { Icon(Icons.Default.Badge, null) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     ExposedDropdownMenuBox(
                         expanded = statusExpanded,
@@ -184,8 +315,7 @@ fun ReviewScreen(
                         label = { Text("Max Israeli/IBKR Account Balance During Year (USD)") },
                         leadingIcon = { Icon(Icons.Default.AccountBalance, null) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         supportingText = { Text("FBAR required if > \$10,000") }
                     )
                 }
@@ -229,8 +359,10 @@ fun ReviewScreen(
             }
 
             // ── Calculate button ──────────────────────────────────────────────
+            val grossAvailable = f106Gross.toD() > 0 || (f106?.grossIncome ?: 0.0) > 0
             Button(
                 onClick = {
+                    viewModel.updateForm106(effectiveForm106())
                     viewModel.calculateTaxes(
                         context = context,
                         filingStatus = filingStatus,
@@ -242,7 +374,7 @@ fun ReviewScreen(
                 },
                 enabled = !uiState.isProcessing &&
                           taxpayerName.isNotBlank() &&
-                          uiState.form106 != null &&
+                          grossAvailable &&
                           uiState.form1099B != null,
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
@@ -303,6 +435,39 @@ private fun SummaryRow(label: String, value: String) {
             fontWeight = FontWeight.SemiBold)
     }
 }
+
+@Composable
+private fun F106Field(
+    label: String,
+    value: String,
+    onValue: (String) -> Unit,
+    keyboard: KeyboardType = KeyboardType.Decimal,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    warn: Boolean = false
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onValue(it.filter { c -> c.isDigit() || c == '.' || c == ',' }) },
+        label = { Text(label, maxLines = 2) },
+        modifier = modifier,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = if (warn) MaterialTheme.colorScheme.error
+                                 else MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = if (warn) MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                                   else MaterialTheme.colorScheme.outline,
+        ),
+        trailingIcon = if (warn) ({
+            Icon(Icons.Default.Warning, null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp))
+        }) else null
+    )
+}
+
+private fun Double.toAmtStr() = if (this == 0.0) "" else "%.0f".format(this)
+private fun String.toD() = replace(",", "").toDoubleOrNull() ?: 0.0
 
 private fun FilingStatus.displayName() = when (this) {
     FilingStatus.SINGLE                    -> "Single"
