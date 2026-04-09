@@ -5,6 +5,7 @@ import com.israelitax.app.data.models.Form1099BData
 import com.israelitax.app.data.models.HoldingPeriod
 import com.israelitax.app.data.models.IsraeliTaxResult
 import com.israelitax.app.data.models.TradeTransaction
+import com.israelitax.app.data.parsers.Form1099BParser
 import com.israelitax.app.data.repository.ExchangeRateRepository
 import kotlin.math.max
 import kotlin.math.min

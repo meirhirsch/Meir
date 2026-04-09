@@ -19,6 +19,7 @@ import com.israelitax.app.ui.viewmodels.TaxUiState
 import com.israelitax.app.ui.viewmodels.TaxViewModel
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultsScreen(
     viewModel: TaxViewModel,

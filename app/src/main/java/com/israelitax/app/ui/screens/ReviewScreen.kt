@@ -16,6 +16,7 @@ import com.israelitax.app.data.models.FilingStatus
 import com.israelitax.app.ui.viewmodels.TaxUiState
 import com.israelitax.app.ui.viewmodels.TaxViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewScreen(
     viewModel: TaxViewModel,
