@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.hebrew.HebrewTextRecognizerOptions
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.israelitax.app.data.models.Form106Data
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -32,7 +32,9 @@ class Form106Parser {
         private const val TAG = "Form106Parser"
     }
 
-    private val recognizer = TextRecognition.getClient(HebrewTextRecognizerOptions.DEFAULT_OPTIONS)
+    // ML Kit has no Hebrew script module. The Latin recognizer correctly reads
+    // all numeric field codes (158, 042, etc.) and monetary amounts on Form 106.
+    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     /**
      * Main entry: scan a bitmap of the Form 106 and extract all key fields.

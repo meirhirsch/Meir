@@ -10,7 +10,6 @@ activityCompose = "1.9.2"
 composeBom = "2024.09.03"
 navigationCompose = "2.8.2"
 mlkitTextRecognition = "16.0.1"
-mlkitTextRecognitionHebrew = "16.0.0"
 coroutines = "1.8.1"
 serialization = "1.7.3"
 # iText 7 (last Apache-licensed version, widely available on Maven Central)
@@ -36,9 +35,8 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
-# ML Kit
+# ML Kit (Latin recognizer handles numbers + Latin chars in both Form 106 and 1099-B)
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
-mlkit-text-recognition-hebrew = { group = "com.google.mlkit", name = "text-recognition-hebrew", version.ref = "mlkitTextRecognitionHebrew" }
 
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }

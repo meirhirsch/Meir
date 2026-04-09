@@ -60,9 +60,8 @@ dependencies {
     implementation(libs.androidx.material.icons)
     implementation(libs.androidx.navigation.compose)
 
-    // ML Kit - OCR
+    // ML Kit - OCR (Latin recognizer works for field codes + amounts in both Form 106 and 1099-B)
     implementation(libs.mlkit.text.recognition)
-    implementation(libs.mlkit.text.recognition.hebrew)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
