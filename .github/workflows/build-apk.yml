@@ -22,20 +22,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # ubuntu-latest has Android SDK pre-installed at $ANDROID_SDK_ROOT
-      # We just need to install the right API level and accept licenses
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
-
       - name: Install Android SDK components
         run: |
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+          # ANDROID_SDK_ROOT is pre-set on ubuntu-latest
+          # sdkmanager binary is not in PATH by default — use full path
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          echo "sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
