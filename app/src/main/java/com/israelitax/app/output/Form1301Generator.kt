@@ -230,7 +230,7 @@ class Form1301Generator(private val context: Context) {
         doc.add(spacer())
 
         // ─── TAX BRACKET BREAKDOWN ────────────────────────────────────────────
-        doc.add(sectionHeader("מדרגות מס הכנסה 2024 (לעיון)"))
+        doc.add(sectionHeader("מדרגות מס הכנסה 2025 (לעיון)"))
         val bracketsTable = Table(UnitValue.createPercentArray(floatArrayOf(30f, 30f, 20f, 20f)))
             .setWidth(UnitValue.createPercentValue(100f))
         bracketsTable.addHeaderCell(headerCell("הכנסה שנתית (₪) מ-"))

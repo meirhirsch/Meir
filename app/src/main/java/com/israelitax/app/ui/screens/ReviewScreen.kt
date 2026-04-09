@@ -192,7 +192,7 @@ fun ReviewScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Use Foreign Earned Income Exclusion (FEIE)",
                                 fontWeight = FontWeight.SemiBold)
-                            Text("Excludes up to \$126,500 of Israeli salary from US tax. " +
+                            Text("Excludes up to \$130,000 of Israeli salary from US tax (2025 limit). " +
                                 "Cannot combine with Foreign Tax Credit on same income.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -217,7 +217,7 @@ fun ReviewScreen(
                         Card(colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
                             Text(
-                                "Using FEIE (Form 2555): Israeli salary excluded up to \$126,500. " +
+                                "Using FEIE (Form 2555): Israeli salary excluded up to \$130,000 (2025). " +
                                 "Cannot claim FTC on excluded amount. If you used FTC before, " +
                                 "switching to FEIE has a 6-year ban (IRS Rev. Rul. 83-82).",
                                 modifier = Modifier.padding(8.dp),

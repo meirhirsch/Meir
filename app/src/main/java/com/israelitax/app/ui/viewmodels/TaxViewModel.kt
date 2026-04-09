@@ -150,7 +150,7 @@ class TaxViewModel : ViewModel() {
                 val israeliResult = israeliCalculator.calculate(
                     form106 = form106,
                     form1099B = form1099B,
-                    averageRateUsdNis = 3.73,
+                    averageRateUsdNis = 3.70,
                     usTaxPaidOnIsraeliIncome = 0.0  // Will be updated after US calc
                 )
 
@@ -162,7 +162,7 @@ class TaxViewModel : ViewModel() {
                     form106 = form106,
                     form1099B = form1099B,
                     filingStatus = filingStatus,
-                    israeliTaxPaid = form106.incomeTaxWithheld / 3.73, // convert NIS → USD for FTC
+                    israeliTaxPaid = form106.incomeTaxWithheld / 3.70, // convert NIS → USD for FTC
                     useFEIE = useFEIE,
                     israeliAccountBalance = israeliAccountBalance
                 )
@@ -171,8 +171,8 @@ class TaxViewModel : ViewModel() {
                 val israeliResultFinal = israeliCalculator.calculate(
                     form106 = form106,
                     form1099B = form1099B,
-                    averageRateUsdNis = 3.73,
-                    usTaxPaidOnIsraeliIncome = usResult.foreignTaxCredit * 3.73
+                    averageRateUsdNis = 3.70,
+                    usTaxPaidOnIsraeliIncome = usResult.foreignTaxCredit * 3.70
                 )
 
                 // Step 4: Generate PDFs

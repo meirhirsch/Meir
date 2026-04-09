@@ -165,7 +165,10 @@ data class IsraeliTaxResult(
     // Result
     val totalTaxLiability: Double = 0.0,
     val totalTaxPaid: Double = 0.0,
-    val refundOrOwed: Double = 0.0        // positive = refund (החזר), negative = תשלום
+    val refundOrOwed: Double = 0.0,       // positive = refund (החזר), negative = תשלום
+
+    // Enriched trades (with per-date BOI exchange rate applied)
+    val enrichedTransactions: List<TradeTransaction> = emptyList()
 )
 
 enum class FilingStatus {
@@ -177,7 +180,7 @@ enum class FilingStatus {
 // ─────────────────────────────────────────────────
 @Serializable
 data class TaxSession(
-    val taxYear: Int = 2024,
+    val taxYear: Int = 2025,
     val form106: Form106Data? = null,
     val form1099B: Form1099BData? = null,
     val filingStatus: FilingStatus = FilingStatus.SINGLE,

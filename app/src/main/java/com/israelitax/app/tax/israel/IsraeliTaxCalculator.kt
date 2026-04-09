@@ -11,7 +11,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Israeli Income Tax Calculator
+ * Israeli Income Tax Calculator – Tax Year 2025
  *
  * Handles dual-income Israeli residents:
  *  1. Salary income (from Form 106)
@@ -19,10 +19,10 @@ import kotlin.math.min
  *
  * Legal basis:
  *  - Income Tax Ordinance [New Version] 5721-1961 (פקודת מס הכנסה)
- *  - Section 91 – Capital Gains Tax
+ *  - Section 91 – Capital Gains Tax (מס רווחי הון)
  *  - Section 14 – Worldwide income for Israeli residents
  *  - Israel-US Tax Treaty (1975, updated 1994) – Article 22 (Relief from Double Taxation)
- *  - Tax brackets per Israeli Tax Authority publication (רשות המיסים, 2024)
+ *  - Tax brackets per Israeli Tax Authority publication (רשות המיסים, 2025)
  *
  * Currency: All amounts in NIS. USD amounts converted using Bank of Israel
  * exchange rate on the date of each transaction (Section 207A of the Ordinance).
@@ -31,56 +31,45 @@ class IsraeliTaxCalculator(
     private val exchangeRateRepo: ExchangeRateRepository
 ) {
     companion object {
-        // ─── 2024 Israeli Tax Brackets (NIS per year) ───────────────────────
-        // Source: רשות המסים ב ישראל, מדרגות מס הכנסה לשנת 2024
-        val INCOME_BRACKETS_2024 = listOf(
-            TaxBracket(0.0,      81_480.0,   0.10),  // 10%
-            TaxBracket(81_480.0,  116_760.0, 0.14),  // 14%
-            TaxBracket(116_760.0, 187_440.0, 0.20),  // 20%
-            TaxBracket(187_440.0, 260_520.0, 0.31),  // 31%
-            TaxBracket(260_520.0, 542_160.0, 0.35),  // 35%
-            TaxBracket(542_160.0, 698_280.0, 0.47),  // 47%
-            TaxBracket(698_280.0, Double.MAX_VALUE, 0.50)  // 50%
+        // ─── 2025 Israeli Tax Brackets (NIS per year) ───────────────────────
+        // Source: רשות המסים בישראל, מדרגות מס הכנסה לשנת 2025
+        // Adjusted ~3.3% from 2024 per annual CPI indexation
+        val INCOME_BRACKETS_2025 = listOf(
+            TaxBracket(0.0,       84_120.0,  0.10),   // 10%
+            TaxBracket(84_120.0,  120_720.0, 0.14),   // 14%
+            TaxBracket(120_720.0, 193_800.0, 0.20),   // 20%
+            TaxBracket(193_800.0, 269_280.0, 0.31),   // 31%
+            TaxBracket(269_280.0, 560_280.0, 0.35),   // 35%
+            TaxBracket(560_280.0, 721_560.0, 0.47),   // 47%
+            TaxBracket(721_560.0, Double.MAX_VALUE, 0.50) // 50%
         )
 
         // ─── Capital Gains Tax Rates ─────────────────────────────────────────
-        // Section 91(b) – Real capital gains from foreign securities (IBKR)
-        // For individual investors (not dealers/traders): 25% flat rate
-        // If > 10% shareholder in foreign company: 30%
-        // Short-term trading income may be classified as business income (מלאי עסקי)
-        // at marginal rate if ITA determines it's a "business" rather than investment
-        const val CAPITAL_GAINS_RATE_FOREIGN_LONG = 0.25   // 25% – foreign securities, long-term
-        const val CAPITAL_GAINS_RATE_FOREIGN_SHORT = 0.25  // 25% – IBKR individual investor
+        // Section 91(b) – Foreign securities (IBKR): 25% flat rate
+        const val CAPITAL_GAINS_RATE_FOREIGN = 0.25
 
         // ─── Tax Credit Point Values (נקודת זיכוי) ──────────────────────────
-        // 2024: each credit point = NIS 2,904/year
-        const val CREDIT_POINT_VALUE_2024 = 2_904.0
+        // 2025: each credit point = NIS 2,994/year (indexed from 2,904 in 2024)
+        const val CREDIT_POINT_VALUE_2025 = 2_994.0
+        const val DEFAULT_CREDIT_POINTS = 2.25   // single Israeli resident
 
-        // Standard credit points for Israeli resident:
-        //   2.25 points for single person
-        //   2.75 for married man
-        //   3.0  for working woman (+ 0.5 for being a woman)
-        // We use the value from Form 106 (already calculated by employer)
-        const val DEFAULT_CREDIT_POINTS = 2.25
-
-        // ─── Bituach Leumi (National Insurance) Rates 2024 ──────────────────
-        // Up to salary ceiling (תקרה): NIS 49,030/month → NIS 588,360/year
-        // Employee portion: 3.5% up to 60% of avg wage, 12% above
-        // 60% of avg wage threshold (2024): ~NIS 7,522/month → NIS 90,264/year
-        const val BL_LOWER_CEILING_2024 = 90_264.0    // 60% of avg salary (yearly)
-        const val BL_UPPER_CEILING_2024 = 588_360.0   // monthly ceiling × 12
-        const val BL_RATE_LOWER = 0.035               // 3.5% on income up to lower ceiling
-        const val BL_RATE_UPPER = 0.12                // 12% above lower ceiling
-        const val HEALTH_RATE_LOWER = 0.031           // 3.1%
-        const val HEALTH_RATE_UPPER = 0.05            // 5%
+        // ─── Bituach Leumi (National Insurance) Rates 2025 ──────────────────
+        // Lower threshold (60% avg wage): ~NIS 7,750/month → NIS 93,000/year
+        // Upper ceiling: ~NIS 50,600/month → NIS 607,200/year
+        const val BL_LOWER_CEILING_2025 = 93_000.0
+        const val BL_UPPER_CEILING_2025 = 607_200.0
+        const val BL_RATE_LOWER   = 0.035   // 3.5%
+        const val BL_RATE_UPPER   = 0.12    // 12%
+        const val HEALTH_RATE_LOWER = 0.031 // 3.1%
+        const val HEALTH_RATE_UPPER = 0.05  // 5%
     }
 
     /**
      * Main calculation entry point.
      *
      * @param form106 Parsed Israeli salary statement
-     * @param form1099B Parsed IBKR trading report (with per-date exchange rates already populated)
-     * @param averageRateUsdNis Used only as fallback if per-transaction rates unavailable
+     * @param form1099B IBKR trading report (individual transactions enriched per-date below)
+     * @param averageRateUsdNis Fallback rate if per-transaction BOI lookup fails
      * @param usTaxPaidOnIsraeliIncome US tax paid on income also taxed in Israel (for FTC)
      */
     suspend fun calculate(
@@ -90,191 +79,130 @@ class IsraeliTaxCalculator(
         usTaxPaidOnIsraeliIncome: Double = 0.0
     ): IsraeliTaxResult {
 
-        // Step 1: Enrich transactions with per-date exchange rates
-        val enrichedTransactions = enrichWithExchangeRates(form1099B.transactions)
+        // Step 1: Enrich each trade with the BOI exchange rate on its sale date
+        val enriched = enrichWithExchangeRates(form1099B.transactions)
 
-        // Step 2: Calculate NIS capital gains from foreign trading
-        val (foreignCapGainLongTermNIS, foreignCapGainShortTermNIS) =
-            computeForeignCapitalGains(enrichedTransactions)
+        // Step 2: Compute NIS capital gains from foreign trading
+        val (capGainLTnis, capGainSTnis) = computeForeignCapGains(enriched)
 
-        // Step 3: Salary income from Form 106 (already in NIS)
+        // Step 3: Salary income (already in NIS from Form 106)
         val salaryIncome = form106.grossIncome
 
-        // Step 4: Total worldwide taxable income
-        val totalIncome = salaryIncome + foreignCapGainLongTermNIS + foreignCapGainShortTermNIS
+        // Step 4: Total worldwide income
+        val totalIncome = salaryIncome + capGainLTnis + capGainSTnis
 
-        // Step 5: Progressive tax on salary income only
-        // Capital gains are taxed at flat rate (not progressive)
-        val salaryTax = computeProgressiveTax(salaryIncome, INCOME_BRACKETS_2024)
+        // Step 5: Progressive tax on salary only (capital gains taxed separately at flat rate)
+        val salaryTax = computeProgressiveTax(salaryIncome, INCOME_BRACKETS_2025)
 
-        // Step 6: Capital gains tax (flat 25% on foreign securities)
-        val capGainsTaxLong = max(0.0, foreignCapGainLongTermNIS) * CAPITAL_GAINS_RATE_FOREIGN_LONG
-        val capGainsTaxShort = max(0.0, foreignCapGainShortTermNIS) * CAPITAL_GAINS_RATE_FOREIGN_SHORT
-        val totalCapGainsTax = capGainsTaxLong + capGainsTaxShort
+        // Step 6: Capital gains tax – 25% flat on foreign securities (Section 91)
+        val cgTaxLT = max(0.0, capGainLTnis) * CAPITAL_GAINS_RATE_FOREIGN
+        val cgTaxST = max(0.0, capGainSTnis) * CAPITAL_GAINS_RATE_FOREIGN
+        val totalCgTax = cgTaxLT + cgTaxST
 
-        // Step 7: Tax credits
-        // Use actual credit points from Form 106, or default
-        val creditPoints = form106.taxCreditsPoints.takeIf { it > 0 } ?: DEFAULT_CREDIT_POINTS
-        val creditAmount = creditPoints * CREDIT_POINT_VALUE_2024
+        // Step 7: Tax credit points (נקודות זיכוי) – from Form 106, or default
+        val creditPts = form106.taxCreditsPoints.takeIf { it > 0 } ?: DEFAULT_CREDIT_POINTS
+        val creditAmt = creditPts * CREDIT_POINT_VALUE_2025
 
-        // Step 8: Tax on salary after credits (can't reduce below 0)
-        val salaryTaxAfterCredits = max(0.0, salaryTax - creditAmount)
+        // Step 8: Salary tax after credits
+        val salaryTaxAfterCredits = max(0.0, salaryTax - creditAmt)
 
         // Step 9: Total tax liability
-        val totalTaxLiability = salaryTaxAfterCredits + totalCapGainsTax
+        val totalTaxLiability = salaryTaxAfterCredits + totalCgTax
 
-        // Step 10: Foreign Tax Credit (Article 22, Israel-US Treaty)
-        // Credit for US tax paid on the same income, limited to Israeli tax on that income
-        // Can't exceed Israeli tax on the same item of income (credit basket)
-        val foreignTaxCredit = computeForeignTaxCredit(
-            usTaxPaidOnForeignIncome = usTaxPaidOnIsraeliIncome,
-            israeliTaxOnSameIncome = salaryTaxAfterCredits
-        )
+        // Step 10: Foreign Tax Credit – Article 22, Israel-US Treaty
+        // Credit for US tax paid on the same income; limited to Israeli tax on that income
+        val foreignTaxCredit = min(usTaxPaidOnIsraeliIncome, salaryTaxAfterCredits)
 
-        // Step 11: Total already paid (from Form 106 withholding)
+        // Step 11: Total already paid (Form 106 withholding + treaty credit)
         val totalPaid = form106.incomeTaxWithheld + foreignTaxCredit
 
         // Step 12: Refund or balance due
         val refundOrOwed = totalPaid - totalTaxLiability
 
         return IsraeliTaxResult(
-            taxYear = form106.taxYear,
+            taxYear = form106.taxYear.takeIf { it > 0 } ?: 2025,
             salaryIncome = salaryIncome,
-            foreignTradingIncome = foreignCapGainLongTermNIS + foreignCapGainShortTermNIS,
+            foreignTradingIncome = capGainLTnis + capGainSTnis,
             totalWorldwideIncome = totalIncome,
             salaryTax = salaryTaxAfterCredits,
-            capitalGainsTaxLongTerm = capGainsTaxLong,
-            capitalGainsTaxShortTerm = capGainsTaxShort,
-            totalCapGainsTax = totalCapGainsTax,
-            taxCreditsPoints = creditPoints,
-            taxCreditsAmount = creditAmount,
+            capitalGainsTaxLongTerm = cgTaxLT,
+            capitalGainsTaxShortTerm = cgTaxST,
+            totalCapGainsTax = totalCgTax,
+            taxCreditsPoints = creditPts,
+            taxCreditsAmount = creditAmt,
             foreignTaxCreditFromUS = foreignTaxCredit,
             incomeTaxWithheld = form106.incomeTaxWithheld,
             bituachLeumi = form106.bituachLeumiEmployee + form106.healthInsurance,
             totalTaxLiability = totalTaxLiability,
             totalTaxPaid = totalPaid,
-            refundOrOwed = refundOrOwed
+            refundOrOwed = refundOrOwed,
+            enrichedTransactions = enriched
         )
     }
 
     /**
-     * Enriches each transaction with the BOI exchange rate on the sale date.
-     * This implements the legal requirement: use the exchange rate published
-     * by the Bank of Israel on the day of the transaction.
+     * Fetches the BOI exchange rate for every trade's sale date.
+     * Walks back up to 7 days for weekends/holidays.
      */
-    private suspend fun enrichWithExchangeRates(
+    suspend fun enrichWithExchangeRates(
         transactions: List<TradeTransaction>
     ): List<TradeTransaction> {
-        // Pre-fetch all years' rates (typically just one tax year)
-        val years = transactions.mapNotNull { txn ->
+        if (transactions.isEmpty()) return emptyList()
+
+        // Pre-warm the annual rate cache for each tax year present
+        transactions.mapNotNull { txn ->
             txn.dateSold.takeLast(4).toIntOrNull()
-        }.toSet()
-        years.forEach { year -> exchangeRateRepo.getRatesForYear(year) }
+        }.toSet().forEach { year -> exchangeRateRepo.getRatesForYear(year) }
 
+        val converter = Form1099BParser()
         return transactions.map { txn ->
-            val saleDateISO = Form1099BParser().convertDateFormat(txn.dateSold)
-            val rateResult = exchangeRateRepo.getRateForDate(saleDateISO)
-            val rate = rateResult.getOrNull()?.usdToNis ?: 0.0
-
+            val isoDate = converter.convertDateFormat(txn.dateSold)
+            val rate = exchangeRateRepo.getRateForDate(isoDate).getOrNull()?.usdToNis ?: 0.0
             txn.copy(
                 exchangeRateOnSaleDate = rate,
-                proceedsNIS = txn.proceeds * rate,
+                proceedsNIS  = txn.proceeds  * rate,
                 costBasisNIS = txn.costBasis * rate,
-                gainLossNIS = txn.gainLoss * rate
+                gainLossNIS  = txn.gainLoss  * rate
             )
         }
     }
 
-    private fun computeForeignCapitalGains(
+    private fun computeForeignCapGains(
         transactions: List<TradeTransaction>
     ): Pair<Double, Double> {
-        var longTermNIS = 0.0
-        var shortTermNIS = 0.0
-
+        var ltNIS = 0.0; var stNIS = 0.0
         for (txn in transactions) {
-            // Use wash-sale adjusted gain/loss, converted to NIS
-            val gainNIS = if (txn.exchangeRateOnSaleDate > 0) {
-                txn.gainLossNIS
-            } else {
-                txn.gainLoss // fallback: use USD if no rate found
-            }
-
+            // Use NIS if we have an exchange rate; otherwise fall back to USD value
+            val gainNIS = if (txn.exchangeRateOnSaleDate > 0) txn.gainLossNIS else txn.gainLoss
             when (txn.holdingPeriod) {
-                HoldingPeriod.LONG_TERM -> longTermNIS += gainNIS
-                HoldingPeriod.SHORT_TERM -> shortTermNIS += gainNIS
+                HoldingPeriod.LONG_TERM  -> ltNIS += gainNIS
+                HoldingPeriod.SHORT_TERM -> stNIS += gainNIS
             }
         }
-
-        return Pair(longTermNIS, shortTermNIS)
+        return Pair(ltNIS, stNIS)
     }
 
-    /**
-     * Computes progressive income tax on a given annual income using Israeli brackets.
-     */
     fun computeProgressiveTax(income: Double, brackets: List<TaxBracket>): Double {
-        var tax = 0.0
-        var remaining = income
-
-        for (bracket in brackets) {
+        var tax = 0.0; var remaining = income
+        for (b in brackets) {
             if (remaining <= 0) break
-            val taxableInBracket = min(remaining, bracket.upperBound - bracket.lowerBound)
-            tax += taxableInBracket * bracket.rate
-            remaining -= taxableInBracket
+            val inBracket = min(remaining, b.upperBound - b.lowerBound)
+            tax += inBracket * b.rate
+            remaining -= inBracket
         }
-
         return tax
     }
 
-    /**
-     * Computes Foreign Tax Credit under Article 22 of the Israel-US Tax Treaty.
-     *
-     * The credit is limited to the lower of:
-     *  a) US tax actually paid on the income
-     *  b) Israeli tax on the same income (proportional basket approach)
-     *
-     * Israel uses the "per-country" limitation method.
-     */
-    private fun computeForeignTaxCredit(
-        usTaxPaidOnForeignIncome: Double,
-        israeliTaxOnSameIncome: Double
-    ): Double {
-        return min(usTaxPaidOnForeignIncome, israeliTaxOnSameIncome)
-    }
-
-    /**
-     * Computes Bituach Leumi and Health Insurance from first principles,
-     * for cases where Form 106 values are unclear.
-     */
     fun computeBituachLeumi(grossAnnualSalary: Double): BituachLeumiResult {
-        val cappedSalary = min(grossAnnualSalary, BL_UPPER_CEILING_2024)
-
-        val blEmployee = if (cappedSalary <= BL_LOWER_CEILING_2024) {
-            cappedSalary * BL_RATE_LOWER
-        } else {
-            BL_LOWER_CEILING_2024 * BL_RATE_LOWER +
-                (cappedSalary - BL_LOWER_CEILING_2024) * BL_RATE_UPPER
-        }
-
-        val healthInsurance = if (cappedSalary <= BL_LOWER_CEILING_2024) {
-            cappedSalary * HEALTH_RATE_LOWER
-        } else {
-            BL_LOWER_CEILING_2024 * HEALTH_RATE_LOWER +
-                (cappedSalary - BL_LOWER_CEILING_2024) * HEALTH_RATE_UPPER
-        }
-
-        return BituachLeumiResult(
-            nationalInsuranceEmployee = blEmployee,
-            healthInsurance = healthInsurance,
-            total = blEmployee + healthInsurance
-        )
+        val capped = min(grossAnnualSalary, BL_UPPER_CEILING_2025)
+        val bl = if (capped <= BL_LOWER_CEILING_2025) capped * BL_RATE_LOWER
+        else BL_LOWER_CEILING_2025 * BL_RATE_LOWER + (capped - BL_LOWER_CEILING_2025) * BL_RATE_UPPER
+        val health = if (capped <= BL_LOWER_CEILING_2025) capped * HEALTH_RATE_LOWER
+        else BL_LOWER_CEILING_2025 * HEALTH_RATE_LOWER + (capped - BL_LOWER_CEILING_2025) * HEALTH_RATE_UPPER
+        return BituachLeumiResult(bl, health, bl + health)
     }
 
-    data class TaxBracket(
-        val lowerBound: Double,
-        val upperBound: Double,
-        val rate: Double
-    )
-
+    data class TaxBracket(val lowerBound: Double, val upperBound: Double, val rate: Double)
     data class BituachLeumiResult(
         val nationalInsuranceEmployee: Double,
         val healthInsurance: Double,

@@ -126,7 +126,7 @@ class Form106Parser {
         val standaloneYear = Regex("""(?<!\d)(20[12]\d)(?!\d)""")
         standaloneYear.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
 
-        return 2024 // default
+        return 2025 // default
     }
 
     private fun extractEntityName(text: String, patterns: List<String>): String {
