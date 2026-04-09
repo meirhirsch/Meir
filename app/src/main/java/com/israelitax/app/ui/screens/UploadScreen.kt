@@ -50,6 +50,12 @@ fun UploadScreen(
         uri?.let { viewModel.uploadForm1099B(context, it) }
     }
 
+    val form1099CSVLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.uploadForm1099BCSV(context, it) }
+    }
+
     // Error snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.error) {
@@ -128,24 +134,16 @@ fun UploadScreen(
                 accentColor = Color(0xFF1565C0)  // Israeli blue
             )
 
-            // 1099-B upload card
-            DocumentUploadCard(
-                title = "Form 1099-B — IBKR Trading Report",
-                subtitle = "Interactive Brokers — Proceeds from Broker",
-                description = "Your annual trading statement from IBKR. Contains all " +
-                    "proceeds, cost basis, gain/loss per trade. Exchange rates fetched " +
-                    "from Bank of Israel per sale date.",
-                icon = Icons.Default.ShowChart,
+            // 1099-B upload card — CSV preferred, PDF as fallback
+            IBKRUploadCard(
                 isUploaded = uiState.form1099B != null,
                 isProcessing = uiState.isProcessing && uiState.form1099B == null,
                 uploadedSummary = uiState.form1099B?.let {
                     "${it.transactions.size} trades  |  " +
                     "Net G/L: $${"%,.0f".format(it.totalNetGainLoss)}"
                 },
-                onUploadClick = {
-                    form1099Launcher.launch("*/*")
-                },
-                accentColor = Color(0xFFB71C1C)  // US red
+                onUploadCSV = { form1099CSVLauncher.launch("*/*") },
+                onUploadPDF = { form1099Launcher.launch("*/*") }
             )
 
             // Processing indicator
@@ -170,14 +168,15 @@ fun UploadScreen(
             // Supported formats info
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Supported Formats", fontWeight = FontWeight.SemiBold,
+                    Text("Tips", fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.labelLarge)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("• PDF — Recommended for best OCR accuracy",
+                    Text("• Form 106: Upload PDF or photo for OCR scanning",
                         style = MaterialTheme.typography.bodySmall)
-                    Text("• JPG / PNG — Photo of document",
-                        style = MaterialTheme.typography.bodySmall)
-                    Text("• All data is processed on-device. Nothing is uploaded to external servers.",
+                    Text("• 1099-B: CSV export is 100% accurate — use it!",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold)
+                    Text("• All data is processed on-device. Nothing leaves your phone.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary)
                 }
@@ -283,6 +282,136 @@ fun DocumentUploadCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(if (isUploaded) "Re-upload" else "Upload Document")
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun IBKRUploadCard(
+    isUploaded: Boolean,
+    isProcessing: Boolean,
+    uploadedSummary: String?,
+    onUploadCSV: () -> Unit,
+    onUploadPDF: () -> Unit
+) {
+    val accentColor = Color(0xFFB71C1C)  // US red
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = if (isUploaded) 2.dp else 1.dp,
+                color = if (isUploaded) Color.Green.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.outlineVariant,
+                shape = RoundedCornerShape(12.dp)
+            )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accentColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.ShowChart, contentDescription = null,
+                        tint = accentColor, modifier = Modifier.size(28.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Form 1099-B — IBKR Trading Report",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge)
+                    Text("Interactive Brokers — Proceeds from Broker",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (isUploaded) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Uploaded",
+                        tint = Color.Green, modifier = Modifier.size(28.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // CSV export instructions — prominent box
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Star, contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary)
+                        Text("Recommended: Export CSV from IBKR",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text("1. Log in to IBKR Client Portal (web or app)",
+                        style = MaterialTheme.typography.bodySmall)
+                    Text("2. Reports → Tax → Gain/Loss Summary",
+                        style = MaterialTheme.typography.bodySmall)
+                    Text("3. Select year 2025, click Download CSV",
+                        style = MaterialTheme.typography.bodySmall)
+                    Text("4. Tap 'Upload CSV' below and select the file",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
+            uploadedSummary?.let { summary ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(colors = CardDefaults.cardColors(
+                    containerColor = Color.Green.copy(alpha = 0.1f)
+                )) {
+                    Text(summary, modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Primary: CSV button
+            Button(
+                onClick = onUploadCSV,
+                enabled = !isProcessing,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accentColor
+                )
+            ) {
+                if (isProcessing) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Importing…")
+                } else {
+                    Icon(Icons.Default.Upload, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (isUploaded) "Re-import CSV" else "Upload CSV (IBKR Export)")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Secondary: PDF/OCR fallback
+            OutlinedButton(
+                onClick = onUploadPDF,
+                enabled = !isProcessing,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Description, contentDescription = null,
+                    modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Upload PDF / Photo (OCR fallback)", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

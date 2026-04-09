@@ -17,6 +17,7 @@ import com.israelitax.app.data.models.TaxSession
 import com.israelitax.app.data.models.USTaxResult
 import com.israelitax.app.data.parsers.Form106Parser
 import com.israelitax.app.data.parsers.Form1099BParser
+import com.israelitax.app.data.parsers.Form1099BCSVParser
 import com.israelitax.app.data.repository.ExchangeRateRepository
 import com.israelitax.app.output.Form1040Generator
 import com.israelitax.app.output.Form1301Generator
@@ -79,7 +80,43 @@ class TaxViewModel : ViewModel() {
         }
     }
 
-    // ─── Upload 1099-B ────────────────────────────────────────────────────────
+    // ─── Upload 1099-B CSV (IBKR export — no OCR needed) ─────────────────────
+    fun uploadForm1099BCSV(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isProcessing = true,
+                processingMessage = "Reading IBKR CSV…",
+                error = null
+            )
+            try {
+                val stream = context.contentResolver.openInputStream(uri)
+                    ?: throw Exception("Cannot open file")
+                val csvText = stream.bufferedReader().use { it.readText() }
+                stream.close()
+
+                val result = Form1099BCSVParser().parse(csvText)
+                if (result.isSuccess) {
+                    val form1099 = result.getOrThrow()
+                    _uiState.value = _uiState.value.copy(
+                        form1099B = form1099,
+                        isProcessing = false,
+                        processingMessage = "CSV imported: ${form1099.transactions.size} trades"
+                    )
+                    Log.i(TAG, "1099-B CSV: ${form1099.transactions.size} trades parsed")
+                } else {
+                    throw result.exceptionOrNull() ?: Exception("CSV parse failed")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "1099-B CSV import failed: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isProcessing = false,
+                    error = "CSV import failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    // ─── Upload 1099-B (PDF/image OCR fallback) ───────────────────────────────
     fun uploadForm1099B(context: Context, uri: Uri) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -247,6 +284,16 @@ class TaxViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(filingStatus = status)
     }
 
+    /** Allows the user to manually correct Form 106 fields that OCR misread. */
+    fun updateForm106(form: Form106Data) {
+        _uiState.value = _uiState.value.copy(form106 = form)
+    }
+
+    /** Allows the user to manually correct 1099-B summary totals that OCR missed. */
+    fun updateForm1099B(form: Form1099BData) {
+        _uiState.value = _uiState.value.copy(form1099B = form)
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -280,8 +327,8 @@ class TaxViewModel : ViewModel() {
                 PdfRenderer(descriptor).use { renderer ->
                     for (i in 0 until renderer.pageCount) {
                         renderer.openPage(i).use { page ->
-                            // Render at 2x density for better OCR accuracy
-                            val scale = 2
+                            // Render at 3x density for better OCR accuracy on Hebrew PDFs
+                            val scale = 3
                             val bitmap = Bitmap.createBitmap(
                                 page.width * scale,
                                 page.height * scale,
