@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <!-- Bank of Israel official API – HTTPS only -->
+        <domain includeSubdomains="true">edge.boi.org.il</domain>
+        <domain includeSubdomains="true">boi.org.il</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
