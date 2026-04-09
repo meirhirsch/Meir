@@ -69,7 +69,9 @@ class IsraeliTaxCalculator(
      *
      * @param form106 Parsed Israeli salary statement
      * @param form1099B IBKR trading report (individual transactions enriched per-date below)
-     * @param averageRateUsdNis Fallback rate if per-transaction BOI lookup fails
+     * @param averageRateUsdNis BOI annual average — used ONLY as fallback if a specific
+     *        trade date has no BOI rate available (e.g. network failure). Primary path
+     *        always uses the exact per-date BOI rate (Section 207A of the Ordinance).
      * @param usTaxPaidOnIsraeliIncome US tax paid on income also taxed in Israel (for FTC)
      */
     suspend fun calculate(
@@ -79,11 +81,14 @@ class IsraeliTaxCalculator(
         usTaxPaidOnIsraeliIncome: Double = 0.0
     ): IsraeliTaxResult {
 
-        // Step 1: Enrich each trade with the BOI exchange rate on its sale date
+        // Step 1: Enrich each trade with the BOI exchange rate on its sale date.
+        // The repository walks back up to 7 days for weekends/holidays.
         val enriched = enrichWithExchangeRates(form1099B.transactions)
 
-        // Step 2: Compute NIS capital gains from foreign trading
-        val (capGainLTnis, capGainSTnis) = computeForeignCapGains(enriched)
+        // Step 2: Compute NIS capital gains.
+        // Uses exact date rate where available; falls back to averageRateUsdNis × USD gain
+        // only for trades where BOI lookup failed (network error / no historical data).
+        val (capGainLTnis, capGainSTnis) = computeForeignCapGains(enriched, averageRateUsdNis)
 
         // Step 3: Salary income (already in NIS from Form 106)
         val salaryIncome = form106.grossIncome
@@ -168,12 +173,19 @@ class IsraeliTaxCalculator(
     }
 
     private fun computeForeignCapGains(
-        transactions: List<TradeTransaction>
+        transactions: List<TradeTransaction>,
+        fallbackRateUsdNis: Double
     ): Pair<Double, Double> {
         var ltNIS = 0.0; var stNIS = 0.0
         for (txn in transactions) {
-            // Use NIS if we have an exchange rate; otherwise fall back to USD value
-            val gainNIS = if (txn.exchangeRateOnSaleDate > 0) txn.gainLossNIS else txn.gainLoss
+            val gainNIS = when {
+                // Best path: exact BOI rate on the trade's sale date
+                txn.exchangeRateOnSaleDate > 0 -> txn.gainLossNIS
+                // Fallback: BOI annual average × USD gain (better than using raw USD as NIS)
+                fallbackRateUsdNis > 0 -> txn.gainLoss * fallbackRateUsdNis
+                // Last resort: use USD value (will show a warning in the Trades tab)
+                else -> txn.gainLoss
+            }
             when (txn.holdingPeriod) {
                 HoldingPeriod.LONG_TERM  -> ltNIS += gainNIS
                 HoldingPeriod.SHORT_TERM -> stNIS += gainNIS

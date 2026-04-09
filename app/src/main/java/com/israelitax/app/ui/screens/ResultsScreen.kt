@@ -75,7 +75,7 @@ fun ResultsScreen(
 
             when (selectedTab) {
                 0 -> IsraeliCPATab(uiState)
-                1 -> USCPATab(uiState, context)
+                1 -> USCPATab(uiState)
                 2 -> TradesTab(uiState)
             }
         }
@@ -120,6 +120,31 @@ private fun IsraeliCPATab(uiState: TaxUiState) {
             CPABilingualRow("פנסיה עובד / Pension Employee (Code 043)", nisFormat(f?.pensionEmployee ?: 0.0))
             CPABilingualRow("קרן השתלמות / Study Fund (Code 048)", nisFormat(f?.studyFund ?: 0.0))
             CPABilingualRow("נקודות זיכוי / Credit Points", "%.2f".format(il.taxCreditsPoints))
+        }
+
+        // ── Exchange Rate Note ─────────────────────────────────────────────────
+        if (uiState.boiAnnualAvgRate > 0) {
+            Card(colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                Row(modifier = Modifier.padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CurrencyExchange, null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(18.dp))
+                    Column {
+                        Text("שער BOI שנתי ממוצע / BOI Annual Average Rate",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelMedium)
+                        Text("${"%.4f".format(uiState.boiAnnualAvgRate)} ₪ לדולר (${"%.4f".format(1.0 / uiState.boiAnnualAvgRate)} USD/NIS)",
+                            style = MaterialTheme.typography.bodySmall)
+                        Text("שיעור זה מחושב מנתוני בנק ישראל היומיים לשנת המס. " +
+                            "כל עסקת מסחר ממירה לפי שער היום הספציפי של המכירה.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f))
+                    }
+                }
+            }
         }
 
         // ── Section 2: Capital Gains (IBKR) ──────────────────────────────────
@@ -227,7 +252,8 @@ private fun IsraeliCPATab(uiState: TaxUiState) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun USCPATab(uiState: TaxUiState, context: android.content.Context) {
+private fun USCPATab(uiState: TaxUiState) {
+    val context = LocalContext.current
     val us = uiState.usTaxResult
     val scroll = rememberScrollState()
     Column(
@@ -249,7 +275,9 @@ private fun USCPATab(uiState: TaxUiState, context: android.content.Context) {
 
         // ── Income ────────────────────────────────────────────────────────────
         CPASection(title = "Income (Lines 1–8)") {
-            CPALineRow("Line 1a", "Wages, Salaries, Tips (Israeli salary converted @ 3.70 NIS/USD)",
+            val rateLabel = if (uiState.boiAnnualAvgRate > 0)
+            "%.4f".format(uiState.boiAnnualAvgRate) else "BOI avg"
+        CPALineRow("Line 1a", "Wages, Salaries, Tips (Israeli salary @ $rateLabel NIS/USD)",
                 usdFormat(us.wagesAndSalaries))
             CPALineRow("Sch D", "Short-Term Capital Gains (IBKR, ordinary rate)",
                 usdFormat(us.shortTermCapGains), signed = true)
@@ -344,6 +372,30 @@ private fun USCPATab(uiState: TaxUiState, context: android.content.Context) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Open טופס 1301 PDF (טיוטה)")
                 }
+            }
+        }
+
+        // ── Exchange rate methodology note ────────────────────────────────────
+        Card(colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+            Column(modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CurrencyExchange, null,
+                        tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                    Text("Currency Conversion Methodology",
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.labelMedium)
+                }
+                if (uiState.boiAnnualAvgRate > 0) {
+                    Text("Salary: converted at BOI ${"%.4f".format(uiState.boiAnnualAvgRate)} NIS/USD " +
+                        "(Bank of Israel ${us?.taxYear ?: 2025} annual average, computed from daily rates)",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                Text("Capital gains: each trade converted at the exact BOI rate on the sale date " +
+                    "(IRC §988 / IRS Notice 2000-20; Section 207A of the Israeli Income Tax Ordinance)",
+                    style = MaterialTheme.typography.bodySmall)
             }
         }
 

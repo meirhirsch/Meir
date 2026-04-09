@@ -197,6 +197,30 @@ class ExchangeRateRepository {
     }
 
     /**
+     * Computes the annual average USD/NIS rate for [year] from BOI published rates.
+     *
+     * Used for Israeli salary conversion to USD on Form 1040 (IRS accepts annual
+     * average rate for regularly-received foreign salary income). The average is
+     * derived from every BOI banking-day rate published during the year — this is
+     * more accurate than IRS published averages and uses the same primary source.
+     *
+     * Returns 0.0 if the year's data hasn't been fetched yet or fetch failed.
+     */
+    suspend fun getAnnualAverageRate(year: Int): Double {
+        // Populate cache if needed
+        if (cache.keys.none { it.startsWith("$year-") }) {
+            getRatesForYear(year)
+        }
+        val yearRates = cache.filter { (date, rate) ->
+            date.startsWith("$year-") && rate.usdToNis > 0
+        }.values
+        if (yearRates.isEmpty()) return 0.0
+        val avg = yearRates.map { it.usdToNis }.average()
+        Log.i(TAG, "BOI $year annual average: %.4f NIS/USD (from ${yearRates.size} banking days)".format(avg))
+        return avg
+    }
+
+    /**
      * Converts an amount in USD to NIS using the rate on the sale date.
      * This is the legally required method for Israeli tax reporting of foreign trades.
      */

@@ -138,23 +138,37 @@ class TaxViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isProcessing = true,
-                processingMessage = "Fetching Bank of Israel exchange rates for each trade…",
+                processingMessage = "Fetching Bank of Israel exchange rates…",
                 error = null
             )
 
             try {
-                // Step 1: Calculate Israeli taxes first
+                // Step 1: Fetch the BOI annual average for the tax year.
+                // This is used for salary conversion (Form 106 gives annual totals, not
+                // individual payroll dates). For every individual trade, the exact BOI
+                // rate on the sale date is used instead (see enrichWithExchangeRates).
+                val taxYear = form106.taxYear.takeIf { it > 0 }
+                    ?: form1099B.taxYear.takeIf { it > 0 }
+                    ?: 2025
                 _uiState.value = _uiState.value.copy(
-                    processingMessage = "Computing Israeli tax (Form 1301)…"
+                    processingMessage = "Fetching BOI $taxYear annual average rate…"
+                )
+                val boiAnnualAvg = exchangeRateRepo.getAnnualAverageRate(taxYear)
+                    .takeIf { it > 0 } ?: 3.70   // network-failure fallback only
+                Log.i(TAG, "BOI $taxYear annual average: $boiAnnualAvg NIS/USD")
+
+                // Step 2: Calculate Israeli taxes
+                _uiState.value = _uiState.value.copy(
+                    processingMessage = "Computing Israeli tax (Form 1301) with per-trade BOI rates…"
                 )
                 val israeliResult = israeliCalculator.calculate(
                     form106 = form106,
                     form1099B = form1099B,
-                    averageRateUsdNis = 3.70,
+                    averageRateUsdNis = boiAnnualAvg,
                     usTaxPaidOnIsraeliIncome = 0.0  // Will be updated after US calc
                 )
 
-                // Step 2: Calculate US taxes
+                // Step 3: Calculate US taxes
                 _uiState.value = _uiState.value.copy(
                     processingMessage = "Computing US federal tax (Form 1040)…"
                 )
@@ -162,17 +176,18 @@ class TaxViewModel : ViewModel() {
                     form106 = form106,
                     form1099B = form1099B,
                     filingStatus = filingStatus,
-                    israeliTaxPaid = form106.incomeTaxWithheld / 3.70, // convert NIS → USD for FTC
+                    israeliTaxPaid = form106.incomeTaxWithheld / boiAnnualAvg,
                     useFEIE = useFEIE,
-                    israeliAccountBalance = israeliAccountBalance
+                    israeliAccountBalance = israeliAccountBalance,
+                    salaryConversionRate = boiAnnualAvg
                 )
 
-                // Step 3: Re-calculate Israeli with US tax credit (if applicable)
+                // Step 4: Re-calculate Israeli with US Foreign Tax Credit (treaty relief)
                 val israeliResultFinal = israeliCalculator.calculate(
                     form106 = form106,
                     form1099B = form1099B,
-                    averageRateUsdNis = 3.70,
-                    usTaxPaidOnIsraeliIncome = usResult.foreignTaxCredit * 3.70
+                    averageRateUsdNis = boiAnnualAvg,
+                    usTaxPaidOnIsraeliIncome = usResult.foreignTaxCredit * boiAnnualAvg
                 )
 
                 // Step 4: Generate PDFs
@@ -211,7 +226,8 @@ class TaxViewModel : ViewModel() {
                     form1040Path = form1040File.absolutePath,
                     form1301Path = form1301File.absolutePath,
                     filingStatus = filingStatus,
-                    taxpayerName = taxpayerName
+                    taxpayerName = taxpayerName,
+                    boiAnnualAvgRate = boiAnnualAvg
                 )
 
                 Log.i(TAG, "Tax calculation complete. US owed/refund: ${usResult.refundOrOwed}")
@@ -295,5 +311,8 @@ data class TaxUiState(
     val form1040Path: String? = null,
     val form1301Path: String? = null,
     val filingStatus: FilingStatus = FilingStatus.SINGLE,
-    val taxpayerName: String = ""
+    val taxpayerName: String = "",
+    /** BOI annual average USD/NIS rate fetched live for the tax year. Used for salary
+     *  conversion on Form 1040 and as NIS fallback for any trade missing a BOI date rate. */
+    val boiAnnualAvgRate: Double = 0.0
 )

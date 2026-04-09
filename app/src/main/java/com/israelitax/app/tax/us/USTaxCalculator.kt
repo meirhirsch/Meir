@@ -71,11 +71,9 @@ class USTaxCalculator(
         const val FATCA_THRESHOLD_SINGLE    = 50_000.0
         const val FATCA_THRESHOLD_MFJ       = 100_000.0
 
-        // ─── IRS average USD/NIS rate for 2025 ───────────────────────────────
-        // Used for Israeli salary conversion (IRS-permitted average annual rate method).
-        // Per-transaction rates from BOI are used for capital gains.
-        // IRS 2025 approximate average: ~3.70 NIS/USD (final rate published Jan 2026)
-        const val IRS_AVERAGE_RATE_2025_USD_TO_NIS = 3.70
+        // Fallback only – used when the BOI annual average cannot be fetched.
+        // The ViewModel fetches the real BOI annual average and passes it as salaryConversionRate.
+        const val FALLBACK_RATE_USD_TO_NIS = 3.70
     }
 
     suspend fun calculate(
@@ -84,7 +82,13 @@ class USTaxCalculator(
         filingStatus: FilingStatus,
         israeliTaxPaid: Double,
         useFEIE: Boolean = false,
-        israeliAccountBalance: Double = 0.0
+        israeliAccountBalance: Double = 0.0,
+        /**
+         * BOI annual average NIS/USD rate for the tax year.
+         * Computed by the ViewModel from actual BOI daily rates (not an IRS estimate).
+         * IRS accepts this method for regularly-received foreign salary (Rev. Rul. 2008-38).
+         */
+        salaryConversionRate: Double = FALLBACK_RATE_USD_TO_NIS
     ): USTaxResult {
 
         val brackets = when (filingStatus) {
@@ -97,11 +101,13 @@ class USTaxCalculator(
             else -> LTCG_THRESHOLDS_SINGLE_2025
         }
 
-        // Step 1: Convert Israeli salary to USD using IRS average annual rate
-        val salaryUSD = form106.grossIncome / IRS_AVERAGE_RATE_2025_USD_TO_NIS
+        // Step 1: Convert Israeli salary to USD using BOI annual average rate.
+        // Form 106 only gives the annual total — individual payroll dates are not available.
+        // BOI annual average is the most accurate available method per both IRS and Israeli TA.
+        val salaryUSD = form106.grossIncome / salaryConversionRate
 
         // Step 2: FEIE or FTC election for salary
-        val (includedSalaryUSD, feieExcluded) = if (useFEIE) {
+        val (includedSalaryUSD, @Suppress("UNUSED_VARIABLE") feieExcluded) = if (useFEIE) {
             val excluded = min(salaryUSD, FEIE_LIMIT_2025)
             Pair(salaryUSD - excluded, excluded)
         } else {
