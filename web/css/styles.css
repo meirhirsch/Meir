@@ -1,0 +1,513 @@
+/* ════════════════════════════════════════════════════════════
+   US–Israel Tax Assistant – Stylesheet
+   Colors: Israeli Blue #003BAB | American Red #B22234
+   ════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --il-blue:     #003BAB;
+  --il-blue-lt:  #1a52c0;
+  --us-red:      #B22234;
+  --us-red-lt:   #c7394d;
+  --gold:        #c8972a;
+  --bg:          #f4f6fb;
+  --card-bg:     #ffffff;
+  --border:      #dde2ef;
+  --text:        #1a1f36;
+  --text-muted:  #6b7280;
+  --gain:        #15803d;
+  --loss:        #b91c1c;
+  --warn-bg:     #fef3c7;
+  --warn-border: #d97706;
+  --ok-bg:       #d1fae5;
+  --ok-border:   #059669;
+  --radius:      10px;
+  --shadow:      0 2px 12px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+
+.app-header {
+  background: linear-gradient(135deg, var(--il-blue) 0%, #0047cc 50%, var(--us-red) 100%);
+  color: #fff;
+  padding: 22px 32px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.2);
+}
+.app-header .flags { font-size: 2.2rem; letter-spacing: 4px; }
+.app-header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.3px; }
+.app-header p { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
+
+/* ─── Step navigation ────────────────────────────────────────────────────── */
+
+.steps-nav {
+  background: var(--card-bg);
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+.step-nav-item {
+  flex: 1;
+  min-width: 130px;
+  text-align: center;
+  padding: 14px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+  white-space: nowrap;
+}
+.step-nav-item:hover { color: var(--il-blue); background: var(--bg); }
+.step-nav-item.active {
+  color: var(--il-blue);
+  border-bottom-color: var(--il-blue);
+  background: var(--bg);
+}
+.step-nav-item.completed { color: var(--ok-border); }
+.step-nav-item .step-num {
+  display: inline-block;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 22px;
+  text-align: center;
+  margin-right: 6px;
+}
+.step-nav-item.active .step-num { background: var(--il-blue); color: #fff; }
+.step-nav-item.completed .step-num { background: var(--ok-border); color: #fff; }
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+
+.container { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+.step-content { display: none; }
+.step-content.active { display: block; }
+
+.step-header { margin-bottom: 24px; }
+.step-header h2 { font-size: 1.45rem; font-weight: 700; color: var(--il-blue); }
+.step-header p  { color: var(--text-muted); margin-top: 4px; }
+
+/* ─── Cards & Panels ────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--il-blue);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .flag { font-size: 1.1rem; }
+
+/* ─── Form elements ─────────────────────────────────────────────────────── */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.form-group label .he { font-size: 0.9em; color: var(--text); text-transform: none; }
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font-size: 0.93rem;
+  color: var(--text);
+  background: var(--card-bg);
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--il-blue);
+  box-shadow: 0 0 0 3px rgba(0,59,171,0.12);
+}
+.form-group input[type="number"] { text-align: right; font-family: 'Courier New', monospace; }
+.form-group .unit { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+.form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.form-row .form-group { flex: 1; min-width: 200px; }
+
+.field-code {
+  display: inline-block;
+  background: var(--il-blue);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 4px;
+  font-family: monospace;
+}
+
+/* ─── Toggle / Checkbox ─────────────────────────────────────────────────── */
+
+.toggle-group {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+}
+.toggle-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--il-blue); cursor: pointer; }
+.toggle-group label { font-size: 0.92rem; cursor: pointer; }
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 22px; border-radius: 7px; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.18s; text-decoration: none;
+}
+.btn-primary { background: var(--il-blue); color: #fff; }
+.btn-primary:hover { background: var(--il-blue-lt); }
+.btn-secondary { background: var(--card-bg); color: var(--il-blue); border: 1.5px solid var(--il-blue); }
+.btn-secondary:hover { background: var(--bg); }
+.btn-danger { background: var(--us-red); color: #fff; }
+.btn-danger:hover { background: var(--us-red-lt); }
+.btn-success { background: #059669; color: #fff; }
+.btn-success:hover { background: #047857; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+
+.btn-row {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px;
+  align-items: center;
+}
+.btn-row .spacer { flex: 1; }
+
+/* ─── Trade table ────────────────────────────────────────────────────────── */
+
+.table-scroll { overflow-x: auto; }
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  min-width: 900px;
+}
+.trade-table th {
+  background: var(--il-blue);
+  color: #fff;
+  padding: 9px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.trade-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.trade-table tr:hover td { background: var(--bg); }
+.trade-table tfoot tr { background: #f0f4ff; font-weight: 700; }
+.trade-table tfoot td { border-top: 2px solid var(--il-blue); padding: 9px 8px; }
+
+.trade-table input, .trade-table select {
+  width: 100%; padding: 4px 6px; font-size: 0.82rem;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--card-bg);
+}
+.trade-table input[type="number"] { text-align: right; font-family: monospace; }
+
+.lt-row td { background: rgba(0,59,171,0.03); }
+.st-row td { background: rgba(178,34,52,0.03); }
+.loss-row .trade-gl { color: var(--loss); }
+
+.del-btn { background: none; border: none; color: var(--us-red); cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+.del-btn:hover { background: #fee2e2; }
+
+/* ─── Badges ─────────────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 12px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
+}
+.badge-lt { background: #dbeafe; color: var(--il-blue); }
+.badge-st { background: #fee2e2; color: var(--us-red); }
+
+/* ─── Exchange rate status ───────────────────────────────────────────────── */
+
+.rate-status { text-align: center; font-size: 1.1rem; }
+.rate-ok     { color: var(--gain); }
+.rate-manual { color: var(--gold); }
+.rate-missing { color: var(--loss); }
+.rate-ok-legend     { color: var(--gain); }
+.rate-manual-legend { color: var(--gold); }
+.rate-missing-legend { color: var(--loss); }
+
+/* ─── Status messages ────────────────────────────────────────────────────── */
+
+.status-msg { margin-top: 12px; font-size: 0.88rem; line-height: 1.7; }
+.ok   { color: var(--gain); font-weight: 600; }
+.warn { color: var(--gold); font-weight: 600; }
+.err  { color: var(--loss); font-weight: 600; }
+.info { color: var(--il-blue); }
+
+/* ─── Summary cards ──────────────────────────────────────────────────────── */
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.summary-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.summary-card .card-title {
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.3px;
+  border: none; padding: 0; margin-bottom: 6px;
+}
+.summary-card .card-value { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+.card-refund .card-value { color: var(--gain); }
+.card-owed   .card-value { color: var(--loss); }
+
+/* ─── Result tabs ────────────────────────────────────────────────────────── */
+
+.result-tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+.result-tab-btn {
+  padding: 9px 20px; background: none; border: none; border-bottom: 3px solid transparent;
+  font-size: 0.88rem; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; transition: all 0.15s; border-radius: 6px 6px 0 0;
+  margin-bottom: -2px;
+}
+.result-tab-btn:hover { color: var(--il-blue); background: var(--bg); }
+.result-tab-btn.active {
+  color: var(--il-blue); border-bottom-color: var(--il-blue); background: var(--card-bg);
+}
+.result-tab-pane { display: none; }
+.result-tab-pane.active { display: block; }
+
+/* ─── Reports ────────────────────────────────────────────────────────────── */
+
+.report {
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.report-header {
+  display: flex; gap: 16px; align-items: center;
+  padding-bottom: 18px; margin-bottom: 22px;
+  border-bottom: 3px solid var(--il-blue);
+}
+.report-1040 .report-header { border-bottom-color: var(--us-red); }
+
+.report-flag { font-size: 2.5rem; }
+.report-header h1 { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+.report-header h2 { font-size: 0.95rem; color: var(--il-blue); margin-top: 2px; }
+.report-1040 .report-header h2 { color: var(--us-red); }
+.report-header .subtitle { font-size: 0.8rem; color: var(--text-muted); }
+
+.report-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.report-section:last-child { border-bottom: none; }
+.report-section h3 {
+  font-size: 0.95rem; font-weight: 700; color: var(--il-blue);
+  margin-bottom: 12px; padding: 8px 12px;
+  background: linear-gradient(to right, rgba(0,59,171,0.07), transparent);
+  border-left: 4px solid var(--il-blue);
+  border-radius: 0 4px 4px 0;
+}
+.report-1040 .report-section h3 {
+  color: var(--us-red);
+  background: linear-gradient(to right, rgba(178,34,52,0.07), transparent);
+  border-left-color: var(--us-red);
+}
+.report-section h4.subsection {
+  font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
+  margin: 14px 0 8px; text-transform: uppercase; letter-spacing: 0.3px;
+}
+
+/* Info table (personal details) */
+.info-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.info-table td { padding: 6px 10px; border: 1px solid var(--border); }
+.info-table td.label { background: var(--bg); font-weight: 600; width: 18%; white-space: nowrap; color: var(--text-muted); }
+
+/* Data table (line items) */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.data-table tr { border-bottom: 1px solid var(--border); }
+.data-table tr:last-child { border-bottom: none; }
+.data-table td { padding: 7px 10px; }
+.data-table td.num { text-align: right; font-family: 'Courier New', monospace; font-size: 0.9rem; white-space: nowrap; }
+.data-table td.deduction { color: var(--text-muted); }
+.data-table tr.total td { font-weight: 700; background: var(--bg); border-top: 2px solid var(--border); }
+.data-table tr.separator td { border-top: 1px dashed var(--border); }
+.data-table td.highlight { color: var(--il-blue); font-size: 1rem; }
+.data-table .loss { color: var(--loss); }
+.data-table .gain { color: var(--gain); }
+
+.data-table tr.result td {
+  font-size: 1.05rem; font-weight: 700;
+  padding: 10px;
+  border-top: 2px solid currentColor;
+}
+.data-table tr.refund td { color: var(--gain); background: var(--ok-bg); }
+.data-table tr.owed    td { color: var(--loss); background: #fee2e2; }
+
+/* Bracket table */
+.bracket-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.bracket-table th { background: var(--bg); padding: 7px 10px; text-align: left; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+.bracket-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.bracket-table td.num { text-align: right; font-family: monospace; }
+.bracket-table tfoot td { font-weight: 700; border-top: 2px solid var(--border); background: var(--bg); padding: 8px 10px; }
+.mt-1 { margin-top: 14px; }
+
+/* Trade schedule table in reports */
+.trade-table.report-trade { min-width: unset; }
+.report-trade th { background: #1e3a8a; }
+.desc { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.num { text-align: right; font-family: monospace; font-size: 0.83rem; }
+.subtotal { background: var(--bg); font-weight: 700; }
+.total-row { background: #e0e7ff; font-weight: 700; }
+.rate-cell.rate-ok     { color: var(--gain); }
+.rate-cell.rate-manual { color: var(--gold); }
+.rate-cell.rate-missing { color: var(--loss); }
+
+/* Notes section */
+.notes ul { margin: 0; padding-left: 1.2rem; }
+.notes li { margin-bottom: 5px; font-size: 0.86rem; color: var(--text-muted); }
+.notes li.warn { color: var(--warn-border); font-weight: 600; }
+
+/* Compliance boxes */
+.compliance-section .compliance-item {
+  padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;
+  font-size: 0.88rem; line-height: 1.5;
+}
+.compliance-item.warn { background: var(--warn-bg); border: 1.5px solid var(--warn-border); color: #92400e; }
+
+/* Report footer */
+.report-footer {
+  margin-top: 24px; padding-top: 14px; border-top: 1px dashed var(--border);
+  font-size: 0.78rem; color: var(--text-muted); text-align: center;
+}
+
+.legend { margin-top: 10px; font-size: 0.82rem; color: var(--text-muted); }
+
+.no-data { color: var(--text-muted); font-style: italic; padding: 20px 0; }
+
+/* ─── API / Rate info box ────────────────────────────────────────────────── */
+
+.rate-info-box {
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1.5px solid var(--il-blue);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.rate-info-box .rate-label { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+.rate-info-box .rate-value { font-size: 1.3rem; font-weight: 700; color: var(--il-blue); }
+.rate-info-box .rate-note  { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ─── Alerts ─────────────────────────────────────────────────────────────── */
+
+.alert {
+  padding: 12px 16px; border-radius: 7px; margin: 12px 0; font-size: 0.88rem;
+}
+.alert-info  { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+.alert-warn  { background: var(--warn-bg); border: 1px solid var(--warn-border); color: #92400e; }
+.alert-ok    { background: var(--ok-bg); border: 1px solid var(--ok-border); color: #065f46; }
+
+/* ─── Divider ────────────────────────────────────────────────────────────── */
+
+.section-divider {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin: 22px 0 14px;
+}
+.section-divider::before, .section-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ─── Trade summary bar ──────────────────────────────────────────────────── */
+
+#tradeSummary {
+  font-size: 0.88rem; color: var(--text-muted);
+  padding: 8px 0;
+}
+#tradeSummary .gain { color: var(--gain); }
+#tradeSummary .loss { color: var(--loss); }
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .app-header { padding: 16px; }
+  .app-header h1 { font-size: 1.2rem; }
+  .container { padding: 16px 12px 50px; }
+  .card { padding: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .btn-row { flex-direction: column; }
+  .summary-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── Print styles ───────────────────────────────────────────────────────── */
+
+@media print {
+  .steps-nav, .app-header, .btn-row, .btn, .step-nav-item,
+  .result-tabs, .no-print, #calcBtn { display: none !important; }
+  body { background: white; font-size: 12pt; }
+  .report { page-break-inside: avoid; }
+  .report-section { page-break-inside: avoid; }
+  .bracket-table, .data-table, .trade-table { page-break-inside: auto; }
+  .report-header { border-color: #000; }
+  .report-section h3 { background: #eee !important; border-left: 3px solid #000 !important; color: #000 !important; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+}

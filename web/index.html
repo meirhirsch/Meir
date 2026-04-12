@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>US–Israel Tax Assistant | Form 106 + 1099 → Form 1301 + 1040</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ══ Header ═══════════════════════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="flags">🇮🇱🇺🇸</div>
+  <div>
+    <h1>US–Israel Tax Assistant</h1>
+    <p>Form 106 + 1099 &rarr; Form 1301 (Israeli) + Form 1040 (US) &nbsp;&bull;&nbsp; Per-day Bank of Israel exchange rates</p>
+  </div>
+</header>
+
+<!-- ══ Step Navigation ══════════════════════════════════════════════════════ -->
+<nav class="steps-nav">
+  <div class="step-nav-item active" data-step="1">
+    <span class="step-num">1</span>Personal Info
+  </div>
+  <div class="step-nav-item" data-step="2">
+    <span class="step-num">2</span>Form 106 🇮🇱
+  </div>
+  <div class="step-nav-item" data-step="3">
+    <span class="step-num">3</span>Form 1099 🇺🇸
+  </div>
+  <div class="step-nav-item" data-step="4">
+    <span class="step-num">4</span>Rates &amp; Calculate
+  </div>
+  <div class="step-nav-item" data-step="5">
+    <span class="step-num">5</span>Reports &amp; Results
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 1 – Personal Information
+═══════════════════════════════════════════════════════════════════════════ -->
+<section id="step-1" class="step-content active">
+  <div class="step-header">
+    <h2>Personal Information</h2>
+    <p>Enter your taxpayer details. These appear on both Form 1301 and Form 1040.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="flag">👤</span> Taxpayer Details</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Tax Year</label>
+        <select id="taxYear">
+          <option value="2025" selected>2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Filing Status</label>
+        <select id="filingStatus">
+          <option value="SINGLE" selected>Single (רווק/ה)</option>
+          <option value="MFJ">Married Filing Jointly (נשוי/אה)</option>
+          <option value="MFS">Married Filing Separately</option>
+          <option value="HOH">Head of Household</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Full Name (English)</label>
+        <input type="text" id="taxpayerName" placeholder="e.g. Yossi Cohen">
+      </div>
+      <div class="form-group">
+        <label>Israeli ID (ת.ז.) <span class="he">מספר זהות</span></label>
+        <input type="text" id="taxpayerID" placeholder="9 digits" maxlength="9">
+      </div>
+      <div class="form-group">
+        <label>US SSN / ITIN</label>
+        <input type="text" id="ssn" placeholder="XXX-XX-XXXX" maxlength="11">
+      </div>
+      <div class="form-group">
+        <label>Israeli Bank Account Balance (USD equiv.)</label>
+        <input type="number" id="accountBalance" min="0" step="100" value="0" placeholder="0">
+        <span class="unit">Used for FBAR ($10,000 threshold) and FATCA checks</span>
+      </div>
+    </div>
+
+    <div class="section-divider">US Tax Elections</div>
+    <div class="toggle-group">
+      <input type="checkbox" id="useFEIE">
+      <label for="useFEIE">
+        <strong>Elect Foreign Earned Income Exclusion (FEIE – Form 2555)</strong>
+        — Exclude up to $130,000 of Israeli salary from US tax.
+        <em>Note: Choosing FEIE forfeits the Foreign Tax Credit on excluded income.</em>
+      </label>
+    </div>
+    <div class="alert alert-info" style="margin-top:14px">
+      <strong>Tip:</strong> For most Israeli residents with high Israeli taxes, the
+      <strong>Foreign Tax Credit (Form 1116)</strong> generally produces a better result than FEIE.
+      Consult a licensed CPA / EA before filing.
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <span class="spacer"></span>
+    <button class="btn btn-primary btn-next">Next: Form 106 &rarr;</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 2 – Israeli Form 106
+═══════════════════════════════════════════════════════════════════════════ -->
+<section id="step-2" class="step-content">
+  <div class="step-header">
+    <h2>Form 106 – Israeli Annual Salary Statement <span style="font-weight:400;color:var(--text-muted)">(טופס 106)</span></h2>
+    <p>Enter the field codes exactly as they appear on your Form 106. All amounts in NIS (₪).</p>
+  </div>
+
+  <!-- Employer info -->
+  <div class="card">
+    <div class="card-title"><span class="flag">🏢</span> Employer Details <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">פרטי מעסיק</span></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Employer Name <span class="he">שם מעסיק</span></label>
+        <input type="text" id="f106_employerName" placeholder="ABC Ltd.">
+      </div>
+      <div class="form-group">
+        <label>Employer Tax File <span class="he">מספר תיק ניכויים</span></label>
+        <input type="text" id="f106_employerId" placeholder="9 digits">
+      </div>
+    </div>
+  </div>
+
+  <!-- Income codes -->
+  <div class="card">
+    <div class="card-title"><span class="flag">💰</span> Income Fields <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">שדות הכנסה</span></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label><span class="field-code">158</span> Gross Income <span class="he">הכנסה ברוטו</span></label>
+        <input type="number" id="f106_grossIncome" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">172</span> Taxable Income <span class="he">הכנסה חייבת</span></label>
+        <input type="number" id="f106_taxableIncome" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">161</span> Tax-Exempt Income <span class="he">הכנסה פטורה</span></label>
+        <input type="number" id="f106_taxExemptIncome" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Withholdings -->
+  <div class="card">
+    <div class="card-title"><span class="flag">🏛️</span> Withholdings &amp; Deductions <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">ניכויים</span></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label><span class="field-code">042</span> Income Tax Withheld <span class="he">מס הכנסה שנוכה</span></label>
+        <input type="number" id="f106_incomeTaxWithheld" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">045</span> Bituach Leumi – Employee <span class="he">ב"ל עובד</span></label>
+        <input type="number" id="f106_bituachLeumiEmployee" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">046</span> Bituach Leumi – Employer <span class="he">ב"ל מעסיק</span></label>
+        <input type="number" id="f106_bituachLeumiEmployer" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">047</span> Health Insurance <span class="he">ביטוח בריאות</span></label>
+        <input type="number" id="f106_healthInsurance" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">043</span> Pension – Employee <span class="he">קרן פנסיה עובד</span></label>
+        <input type="number" id="f106_pensionEmployee" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">044</span> Pension – Employer <span class="he">קרן פנסיה מעסיק</span></label>
+        <input type="number" id="f106_pensionEmployer" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+      <div class="form-group">
+        <label><span class="field-code">048</span> Study Fund (Keren Hishtalmut) <span class="he">קרן השתלמות</span></label>
+        <input type="number" id="f106_studyFund" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">₪ NIS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tax credits -->
+  <div class="card">
+    <div class="card-title"><span class="flag">⭐</span> Tax Credit Points <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">נקודות זיכוי</span></div>
+    <div class="alert alert-info">
+      2025 credit point value: <strong>₪2,994 / point</strong>.
+      Default: 2.25 pts (single resident). Married couples typically 3.5 pts.
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group">
+        <label>Credit Points <span class="he">מספר נקודות זיכוי</span></label>
+        <input type="number" id="f106_taxCreditsPoints" min="0" step="0.25" placeholder="2.25">
+        <span class="unit">From Form 106 or leave blank for default</span>
+      </div>
+      <div class="form-group">
+        <label>Credit Amount (auto) <span class="he">סכום זיכויים</span></label>
+        <input type="number" id="f106_taxCreditsAmount" readonly placeholder="Auto-calculated">
+        <span class="unit">₪ NIS</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary btn-prev">&larr; Back</button>
+    <span class="spacer"></span>
+    <button class="btn btn-primary btn-next">Next: Form 1099 &rarr;</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 3 – American Form 1099
+═══════════════════════════════════════════════════════════════════════════ -->
+<section id="step-3" class="step-content">
+  <div class="step-header">
+    <h2>Form 1099 – US Income Forms</h2>
+    <p>Enter income from all 1099 forms. All amounts in USD ($).</p>
+  </div>
+
+  <!-- 1099-NEC -->
+  <div class="card">
+    <div class="card-title"><span class="flag">💼</span> Form 1099-NEC – Non-Employee Compensation</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Box 1 – Nonemployee Compensation</label>
+        <input type="number" id="f1099_necIncome" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD – freelance / consulting income → Schedule C</span>
+      </div>
+      <div class="form-group">
+        <label>Box 4 – Federal Tax Withheld</label>
+        <input type="number" id="f1099_necWithheld" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1099-INT -->
+  <div class="card">
+    <div class="card-title"><span class="flag">🏦</span> Form 1099-INT – Interest Income</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Box 1 – Interest Income</label>
+        <input type="number" id="f1099_interestIncome" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD → Form 1040 Line 2b</span>
+      </div>
+      <div class="form-group">
+        <label>Box 4 – Federal Tax Withheld</label>
+        <input type="number" id="f1099_interestWithheld" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1099-DIV -->
+  <div class="card">
+    <div class="card-title"><span class="flag">📈</span> Form 1099-DIV – Dividends &amp; Distributions</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Box 1a – Total Ordinary Dividends</label>
+        <input type="number" id="f1099_ordinaryDividends" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD → Form 1040 Line 3b</span>
+      </div>
+      <div class="form-group">
+        <label>Box 1b – Qualified Dividends</label>
+        <input type="number" id="f1099_qualifiedDividends" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD – taxed at LTCG rates → Form 1040 Line 3a</span>
+      </div>
+      <div class="form-group">
+        <label>Box 4 – Federal Tax Withheld</label>
+        <input type="number" id="f1099_divWithheld" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1099-B -->
+  <div class="card">
+    <div class="card-title"><span class="flag">📊</span> Form 1099-B – Proceeds from Broker Transactions</div>
+    <div class="alert alert-info">
+      <strong>Per-day exchange rates:</strong> each trade's USD gain is converted to NIS using the
+      Bank of Israel rate on the <em>actual sale date</em> (§207A Israeli Tax Ordinance).
+      Import your IBKR CSV or enter trades manually below.
+    </div>
+
+    <!-- CSV Import -->
+    <div style="margin: 16px 0; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+      <button class="btn btn-secondary" id="csvImportBtn">⬆ Import IBKR CSV</button>
+      <input type="file" id="csvFileInput" accept=".csv,.txt" style="display:none">
+      <span style="font-size:0.82rem;color:var(--text-muted)">
+        Supports: IBKR Gain/Loss Report, IBKR Activity Statement, Generic CSV
+      </span>
+    </div>
+    <div class="status-msg" id="csvStatus"></div>
+
+    <!-- 1099-B summary totals (auto-filled from CSV or manual) -->
+    <div class="section-divider">1099-B Summary Totals</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Short-Term Net Gain / (Loss)</label>
+        <input type="number" id="f1099_shortTermGainLoss" step="0.01" placeholder="Auto from trades">
+        <span class="unit">$ USD – held ≤ 1 year, taxed as ordinary income</span>
+      </div>
+      <div class="form-group">
+        <label>Long-Term Net Gain / (Loss)</label>
+        <input type="number" id="f1099_longTermGainLoss" step="0.01" placeholder="Auto from trades">
+        <span class="unit">$ USD – held &gt; 1 year, preferential rate</span>
+      </div>
+      <div class="form-group">
+        <label>Box 4 – Federal Tax Withheld</label>
+        <input type="number" id="f1099_federalTaxWithheld" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD (backup withholding, usually $0)</span>
+      </div>
+      <div class="form-group">
+        <label>Box 1g – Wash Sale Loss Disallowed</label>
+        <input type="number" id="f1099_washSaleLossDisallowed" min="0" step="0.01" placeholder="0.00">
+        <span class="unit">$ USD (already reflected in gain/loss above)</span>
+      </div>
+    </div>
+
+    <!-- Individual trade table -->
+    <div class="section-divider">Individual Trades (for Exchange Rate Conversion)</div>
+    <div id="tradeSummary" style="margin-bottom:10px"></div>
+    <div class="table-scroll">
+      <table class="trade-table">
+        <thead>
+          <tr>
+            <th>Security</th>
+            <th>Date Acquired</th>
+            <th>Date Sold</th>
+            <th>Term</th>
+            <th>Proceeds $</th>
+            <th>Cost Basis $</th>
+            <th>Gain/Loss $</th>
+            <th>Wash Adj $</th>
+            <th>Manual Rate ₪/$</th>
+            <th>BOI</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tradeTableBody">
+          <tr id="emptyTradeRow">
+            <td colspan="11" style="text-align:center;color:var(--text-muted);padding:20px;font-style:italic">
+              No trades yet. Import a CSV or click "Add Trade" below.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-secondary btn-sm" id="addTradeBtn">+ Add Trade Row</button>
+      <span style="font-size:0.8rem;color:var(--text-muted)">
+        Leave "Manual Rate" blank to auto-fetch from Bank of Israel on the calculate step.
+      </span>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary btn-prev">&larr; Back</button>
+    <span class="spacer"></span>
+    <button class="btn btn-primary btn-next">Next: Calculate &rarr;</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 4 – Exchange Rates & Calculation
+═══════════════════════════════════════════════════════════════════════════ -->
+<section id="step-4" class="step-content">
+  <div class="step-header">
+    <h2>Exchange Rates &amp; Tax Calculation</h2>
+    <p>Fetches official USD/NIS rates from the Bank of Israel for each trade date, then runs both Israeli and US calculations.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="flag">🏦</span> Bank of Israel Exchange Rate Service</div>
+    <div class="alert alert-info">
+      <strong>Methodology:</strong> Each trade's USD gain is converted to NIS using the Bank of Israel
+      official rate on the <strong>actual sale date</strong> (Israeli Tax Ordinance §207A).
+      For weekends and public holidays, the last preceding banking-day rate is used
+      — the standard approach accepted by both the ITA and the IRS.
+      Israeli salary is converted using the <strong>annual average rate</strong>
+      (IRS Rev. Rul. 2008-38).
+    </div>
+
+    <div class="rate-info-box">
+      <div>
+        <div class="rate-label">BOI Annual Average Rate (NIS per $1)</div>
+        <div class="rate-value" id="annualAvgDisplay">—</div>
+        <div class="rate-note">Fetched from Bank of Israel API for tax year selected above</div>
+      </div>
+      <div>
+        <div class="rate-label">Trades with BOI Rates</div>
+        <div class="rate-value" id="ratesFoundDisplay">—</div>
+      </div>
+    </div>
+
+    <div class="alert alert-warn">
+      <strong>CORS note:</strong> If the Bank of Israel API is blocked by your browser's cross-origin policy,
+      rates will show as "Missing." In that case, enter rates manually in the "Manual Rate" column in Step 3,
+      or run this tool via a local web server (e.g. <code>npx serve .</code>).
+      A manual rate entry overrides the API value.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="flag">🧮</span> Run Calculation</div>
+    <p style="margin-bottom:16px;color:var(--text-muted)">
+      This will: (1) fetch BOI rates for all trade dates, (2) calculate Israeli Form 1301,
+      (3) calculate US Form 1040, (4) apply Foreign Tax Credit between both systems.
+    </p>
+    <button class="btn btn-primary" id="calcBtn" style="font-size:1rem;padding:13px 32px">
+      ⚡ Calculate Taxes
+    </button>
+    <div class="status-msg" id="calcStatus" style="margin-top:14px"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary btn-prev">&larr; Back</button>
+    <span class="spacer"></span>
+    <button class="btn btn-primary btn-next">View Results &rarr;</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 5 – Reports & Results
+═══════════════════════════════════════════════════════════════════════════ -->
+<section id="step-5" class="step-content">
+  <div class="step-header">
+    <h2>Reports &amp; Results</h2>
+    <p>Print-ready reports for your CPA. Click "Calculate Taxes" in Step 4 first.</p>
+  </div>
+
+  <!-- Summary cards -->
+  <div id="summaryCards" class="summary-cards">
+    <div class="summary-card" style="grid-column:1/-1;color:var(--text-muted);text-align:center;font-style:italic">
+      No results yet — go to Step 4 and click "Calculate Taxes".
+    </div>
+  </div>
+
+  <!-- Print buttons -->
+  <div class="btn-row no-print" style="margin-bottom:20px">
+    <button class="btn btn-primary"   id="printAll">🖨 Print All Reports</button>
+    <button class="btn btn-secondary" id="print1301">Print Form 1301 (🇮🇱)</button>
+    <button class="btn btn-secondary" id="print1040">Print Form 1040 (🇺🇸)</button>
+    <button class="btn btn-secondary" id="printSchedule">Print Schedule D</button>
+  </div>
+
+  <!-- Result tabs -->
+  <div class="result-tabs no-print">
+    <button class="result-tab-btn active" data-tab="1301">🇮🇱 Form 1301 (Israeli)</button>
+    <button class="result-tab-btn" data-tab="1040">🇺🇸 Form 1040 (US)</button>
+    <button class="result-tab-btn" data-tab="schedule">📊 Schedule D + Rates</button>
+  </div>
+
+  <div class="result-tab-pane active card" id="tab-1301">
+    <div id="report1301">
+      <p class="no-data">Run the calculation in Step 4 to generate the Israeli Form 1301 report.</p>
+    </div>
+  </div>
+
+  <div class="result-tab-pane card" id="tab-1040">
+    <div id="report1040">
+      <p class="no-data">Run the calculation in Step 4 to generate the US Form 1040 report.</p>
+    </div>
+  </div>
+
+  <div class="result-tab-pane card" id="tab-schedule">
+    <div id="reportSchedule">
+      <p class="no-data">Run the calculation in Step 4 to generate Schedule D with per-trade exchange rates.</p>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary btn-prev no-print">&larr; Back to Calculate</button>
+    <span class="spacer"></span>
+    <button class="btn btn-success" onclick="window.location.reload()">↺ Start New Return</button>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="alert alert-warn" style="margin-top:30px">
+    <strong>Disclaimer:</strong> This tool is for <em>educational and preparatory purposes only</em>.
+    It is not a substitute for professional tax advice. Tax laws change annually.
+    Always verify results with a licensed Israeli CPA (רואה חשבון מוסמך) and a US CPA or
+    Enrolled Agent before filing. The authors accept no liability for filing errors.
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- ══ Scripts ═════════════════════════════════════════════════════════════ -->
+<script src="js/exchangeRates.js"></script>
+<script src="js/israeliTax.js"></script>
+<script src="js/usTax.js"></script>
+<script src="js/csvParser.js"></script>
+<script src="js/reportGenerator.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
