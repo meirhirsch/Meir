@@ -1,0 +1,319 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f5f7fa;
+  color: #1a1a2e;
+  direction: rtl;
+}
+
+/* ── App shell ── */
+.app-header {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid rgba(255 255 255 / 0.3);
+  color: #ccc;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-btn:hover,
+.nav-btn.active {
+  background: rgba(255 255 255 / 0.15);
+  color: #fff;
+}
+
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* ── Search bar ── */
+.search-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+  direction: rtl;
+}
+
+.chain-select {
+  padding: 0.6rem 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* ── Two-pane layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Product cards ── */
+.product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 76vh;
+  overflow-y: auto;
+}
+
+.product-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.product-card:hover {
+  border-color: #4c6ef5;
+  box-shadow: 0 0 0 2px rgba(76, 110, 245, 0.15);
+}
+
+.product-card.active {
+  border-color: #4c6ef5;
+  background: #eef2ff;
+}
+
+.product-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+}
+
+.product-mfr {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.product-prices {
+  font-size: 0.85rem;
+}
+
+.min-price {
+  font-weight: 700;
+  color: #2f9e44;
+}
+
+.max-price {
+  color: #888;
+}
+
+.chain-count {
+  color: #888;
+}
+
+/* ── Detail panel ── */
+.detail-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  min-height: 300px;
+}
+
+.detail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+  font-size: 0.95rem;
+}
+
+.price-compare h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.item-meta {
+  font-size: 0.82rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.prices-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.prices-table th,
+.prices-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: right;
+}
+
+.prices-table th {
+  font-weight: 600;
+  background: #f8f9fa;
+  color: #444;
+}
+
+.prices-table tr.cheapest {
+  background: #f0fff4;
+}
+
+.price-cell {
+  font-weight: 700;
+  color: #2f9e44;
+}
+
+/* ── Sync page ── */
+.sync-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.sync-header h2 {
+  font-size: 1.2rem;
+}
+
+.btn-primary {
+  background: #4c6ef5;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 7px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #364fc7;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sync-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  font-size: 0.88rem;
+}
+
+.sync-table th,
+.sync-table td {
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: right;
+}
+
+.sync-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+}
+
+.sync-table tr.row-error {
+  background: #fff5f5;
+}
+
+.mono {
+  font-family: monospace;
+  font-size: 0.82rem;
+}
+
+.file-name {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-ok {
+  background: #d3f9d8;
+  color: #2f9e44;
+}
+
+.badge-error {
+  background: #ffe3e3;
+  color: #e03131;
+}
+
+.error-msg {
+  margin-right: 4px;
+  cursor: help;
+}
+
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+}
+
+.error {
+  color: #e03131;
+  padding: 1rem;
+}
