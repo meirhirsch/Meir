@@ -84,6 +84,7 @@ class ShufersalScraper(BaseScraper):
             try:
                 resp = self.client.get(url, headers=HEADERS)
                 resp.raise_for_status()
+                logger.debug("Shufersal catID=%d response preview: %s", cat_id, resp.text[:300])
                 data = resp.json()
                 before = len(files)
                 for entry in data.get("Data", []):
@@ -100,11 +101,7 @@ class ShufersalScraper(BaseScraper):
                     add(file_url, file_type, modified)
                 logger.info("Shufersal API catID=%d: +%d files", cat_id, len(files) - before)
             except Exception as exc:
-                logger.warning(
-                    "Shufersal JSON API catID=%d failed: %s | response preview: %s",
-                    cat_id, exc,
-                    resp.text[:200] if "resp" in dir() else "n/a",
-                )
+                logger.warning("Shufersal JSON API catID=%d failed: %s", cat_id, exc)
 
         # ── HTML fallback: scrape all .gz links from the main page ────────
         if not files:

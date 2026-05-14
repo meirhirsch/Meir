@@ -62,26 +62,32 @@ class RamiLevyScraper(BaseScraper):
 
     def _login(self) -> bool:
         try:
-            # Step 1: GET login page to initialize session cookies
-            self.client.get(f"{BASE_URL}/login")
+            # Step 1: GET login page to pick up session cookie + find form fields
+            login_page = self.client.get(f"{BASE_URL}/login")
+            logger.debug("Rami Levy login page: %s", login_page.text[:500])
 
-            # Step 2: POST credentials
-            resp = self.client.post(
-                f"{BASE_URL}/login/user",
-                data={"username": USERNAME, "password": PASSWORD},
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
+            # Step 2: Try all known field-name variants for the username
+            for user_field in ["username", "user", "email", "UserName"]:
+                resp = self.client.post(
+                    f"{BASE_URL}/login/user",
+                    data={user_field: USERNAME, "password": PASSWORD},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+                logger.debug(
+                    "Rami Levy POST %s=%s → %s cookies=%s body=%s",
+                    user_field, USERNAME, resp.status_code,
+                    dict(self.client.cookies), resp.text[:300],
+                )
+                # Step 3: Check if /file/d is accessible
+                check = self.client.get(f"{BASE_URL}/file/d")
+                if "/login" not in str(check.url):
+                    self._logged_in = True
+                    logger.info("Rami Levy: logged in (field=%s)", user_field)
+                    return True
+                logger.warning("Rami Levy: field=%s didn't work, trying next", user_field)
 
-            # Step 3: Verify we can actually reach /file/d (not redirected back to login)
-            check = self.client.get(f"{BASE_URL}/file/d")
-            if "/login" in str(check.url):
-                logger.error("Rami Levy: login did not create a valid session (redirected to login)")
-                logger.debug("Login response: %s | %s", resp.status_code, resp.text[:300])
-                return False
-
-            self._logged_in = True
-            logger.info("Rami Levy: logged in successfully")
-            return True
+            logger.error("Rami Levy: all login attempts failed")
+            return False
         except Exception as exc:
             logger.error("Rami Levy: login failed: %s", exc)
             return False

@@ -8,9 +8,14 @@ from app.api.routes import router
 from app import scheduler
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
 )
+# Keep noisy libraries at INFO
+logging.getLogger("httpx").setLevel(logging.INFO)
+logging.getLogger("httpcore").setLevel(logging.INFO)
+logging.getLogger("watchfiles").setLevel(logging.WARNING)
+logging.getLogger("apscheduler").setLevel(logging.INFO)
 
 app = FastAPI(title="GZ Price Checker", version="1.0.0")
 
