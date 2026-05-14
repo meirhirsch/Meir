@@ -97,40 +97,54 @@ class RamiLevyScraper(BaseScraper):
 
         files: list[RemoteFile] = []
         try:
-            # Cerberus is a JS SPA — request the file list as JSON via API
-            for endpoint in ["/file/json", "/file/d/json", "/api/file/d"]:
-                resp = self.client.get(
-                    f"{BASE_URL}{endpoint}",
-                    headers={"Accept": "application/json, */*", "X-Requested-With": "XMLHttpRequest"},
-                )
-                if resp.status_code == 200 and "/login" not in str(resp.url):
-                    try:
-                        data = resp.json()
-                        logger.debug("Rami Levy %s JSON: %s", endpoint, str(data)[:300])
-                        entries = data if isinstance(data, list) else data.get("files", data.get("data", []))
-                        for entry in entries:
-                            name = entry.get("name", "") or entry.get("fileName", "") or entry.get("file_name", "")
-                            if name and name.endswith(".gz"):
-                                files.append(RemoteFile(
-                                    url=f"{BASE_URL}/file/d/{name}",
-                                    name=name,
-                                    file_type=_detect_type(name),
-                                ))
-                        if files:
-                            logger.info("Rami Levy: found %d files via %s", len(files), endpoint)
-                            break
-                    except Exception as e:
-                        logger.debug("Rami Levy %s not JSON: %s | preview: %s", endpoint, e, resp.text[:200])
+            # Get the main file directory page (44KB SPA HTML)
+            resp = self.client.get(f"{BASE_URL}/file/d")
+            if "/login" in str(resp.url):
+                logger.error("Rami Levy: session expired")
+                return []
+            html_body = resp.text
 
-            # Fallback: parse HTML for .gz hrefs
+            # Try 1: look for .gz filenames embedded in JS/HTML data
+            names = re.findall(r'[\w\-]+\.gz', html_body)
+            for name in set(names):
+                if any(k in name.lower() for k in ["price", "promo", "store"]):
+                    files.append(RemoteFile(
+                        url=f"{BASE_URL}/file/d/{name}",
+                        name=name,
+                        file_type=_detect_type(name),
+                    ))
+            if files:
+                logger.info("Rami Levy: found %d files embedded in page HTML", len(files))
+
+            # Try 2: JSON endpoint with swhg timestamp (same trick as Shufersal)
             if not files:
-                resp = self.client.get(f"{BASE_URL}/file/d")
-                hrefs = re.findall(r'href=["\']([^"\']+\.gz)["\']', resp.text)
-                for href in hrefs:
-                    name = href.split("/")[-1]
-                    url = href if href.startswith("http") else f"{BASE_URL}/file/d/{name}"
-                    files.append(RemoteFile(url=url, name=name, file_type=_detect_type(name)))
-                logger.info("Rami Levy: found %d files via HTML fallback", len(files))
+                import time
+                ts = int(time.time() * 1000)
+                for endpoint in [f"/file/d?__swhg={ts}", f"/file/d?format=json", "/file/d?json=1"]:
+                    r = self.client.get(
+                        f"{BASE_URL}{endpoint}",
+                        headers={"Accept": "application/json", "X-Requested-With": "XMLHttpRequest"},
+                    )
+                    if r.status_code == 200 and "/login" not in str(r.url):
+                        try:
+                            data = r.json()
+                            entries = data if isinstance(data, list) else data.get("files", data.get("data", []))
+                            for entry in entries:
+                                name = entry.get("name", "") or entry.get("fileName", "")
+                                if name and name.endswith(".gz"):
+                                    files.append(RemoteFile(
+                                        url=f"{BASE_URL}/file/d/{name}",
+                                        name=name,
+                                        file_type=_detect_type(name),
+                                    ))
+                            if files:
+                                logger.info("Rami Levy: found %d files via %s", len(files), endpoint)
+                                break
+                        except Exception:
+                            # Log the response so we can see what the server returns
+                            logger.debug("Rami Levy %s preview: %s", endpoint, r.text[:400])
+
+            logger.info("Rami Levy: total %d files", len(files))
         except Exception as exc:
             logger.error("Rami Levy: file listing failed: %s", exc)
 
