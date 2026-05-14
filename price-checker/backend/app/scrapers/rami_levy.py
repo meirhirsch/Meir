@@ -104,6 +104,7 @@ class RamiLevyScraper(BaseScraper):
                 if not self._login():
                     return []
                 resp = self.client.get(f"{BASE_URL}/file/d")
+            logger.debug("Rami Levy /file/d response (%d bytes): %s", len(resp.text), resp.text[:500])
             resp.raise_for_status()
 
             # Response may be JSON or HTML directory listing

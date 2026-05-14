@@ -86,21 +86,28 @@ class ShufersalScraper(BaseScraper):
             try:
                 resp = self.client.get(url, headers=HEADERS)
                 resp.raise_for_status()
-                logger.debug("Shufersal catID=%d response preview: %s", cat_id, resp.text[:300])
-                data = resp.json()
                 before = len(files)
-                for entry in data.get("Data", []):
-                    file_url = entry.get("FileNm", "")
-                    if not file_url:
-                        continue
-                    modified_raw = entry.get("FileVldDt", "")
-                    modified = None
-                    if modified_raw:
-                        try:
-                            modified = datetime.strptime(modified_raw[:19], "%Y-%m-%dT%H:%M:%S")
-                        except ValueError:
-                            pass
-                    add(file_url, file_type, modified)
+
+                # Try JSON first
+                try:
+                    data = resp.json()
+                    for entry in data.get("Data", []):
+                        file_url = entry.get("FileNm", "")
+                        if not file_url:
+                            continue
+                        modified_raw = entry.get("FileVldDt", "")
+                        modified = None
+                        if modified_raw:
+                            try:
+                                modified = datetime.strptime(modified_raw[:19], "%Y-%m-%dT%H:%M:%S")
+                            except ValueError:
+                                pass
+                        add(file_url, file_type, modified)
+                except Exception:
+                    # API returns HTML grid — extract .gz links from the HTML rows
+                    for file_url in re.findall(r'https://[^"\'<>\s]+\.gz(?:\?[^"\'<>\s]*)?', resp.text):
+                        add(html.unescape(file_url), file_type)
+
                 logger.info("Shufersal API catID=%d: +%d files", cat_id, len(files) - before)
             except Exception as exc:
                 logger.warning("Shufersal JSON API catID=%d failed: %s", cat_id, exc)
