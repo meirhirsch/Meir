@@ -61,22 +61,30 @@ class RamiLevyScraper(BaseScraper):
         self._logged_in = False
 
     def _login(self) -> bool:
-        # Try both known Cerberus login endpoints
-        for endpoint in ["/login/user", "/login"]:
-            try:
-                resp = self.client.post(
-                    f"{BASE_URL}{endpoint}",
-                    data={"username": USERNAME, "password": PASSWORD},
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                )
-                if resp.status_code in (200, 302):
-                    self._logged_in = True
-                    logger.info("Rami Levy: logged in via %s", endpoint)
-                    return True
-            except Exception as exc:
-                logger.warning("Rami Levy: login via %s failed: %s", endpoint, exc)
-        logger.error("Rami Levy: all login attempts failed")
-        return False
+        try:
+            # Step 1: GET login page to initialize session cookies
+            self.client.get(f"{BASE_URL}/login")
+
+            # Step 2: POST credentials
+            resp = self.client.post(
+                f"{BASE_URL}/login/user",
+                data={"username": USERNAME, "password": PASSWORD},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+
+            # Step 3: Verify we can actually reach /file/d (not redirected back to login)
+            check = self.client.get(f"{BASE_URL}/file/d")
+            if "/login" in str(check.url):
+                logger.error("Rami Levy: login did not create a valid session (redirected to login)")
+                logger.debug("Login response: %s | %s", resp.status_code, resp.text[:300])
+                return False
+
+            self._logged_in = True
+            logger.info("Rami Levy: logged in successfully")
+            return True
+        except Exception as exc:
+            logger.error("Rami Levy: login failed: %s", exc)
+            return False
 
     def list_files(self) -> list[RemoteFile]:
         if not self._logged_in and not self._login():
@@ -85,6 +93,12 @@ class RamiLevyScraper(BaseScraper):
         files: list[RemoteFile] = []
         try:
             resp = self.client.get(f"{BASE_URL}/file/d")
+            if "/login" in str(resp.url):
+                logger.error("Rami Levy: session expired, re-logging in")
+                self._logged_in = False
+                if not self._login():
+                    return []
+                resp = self.client.get(f"{BASE_URL}/file/d")
             resp.raise_for_status()
 
             # Response may be JSON or HTML directory listing

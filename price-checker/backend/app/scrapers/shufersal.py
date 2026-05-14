@@ -100,7 +100,11 @@ class ShufersalScraper(BaseScraper):
                     add(file_url, file_type, modified)
                 logger.info("Shufersal API catID=%d: +%d files", cat_id, len(files) - before)
             except Exception as exc:
-                logger.warning("Shufersal JSON API catID=%d failed: %s", cat_id, exc)
+                logger.warning(
+                    "Shufersal JSON API catID=%d failed: %s | response preview: %s",
+                    cat_id, exc,
+                    resp.text[:200] if "resp" in dir() else "n/a",
+                )
 
         # ── HTML fallback: scrape all .gz links from the main page ────────
         if not files:
