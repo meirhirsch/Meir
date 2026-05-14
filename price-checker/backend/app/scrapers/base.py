@@ -163,18 +163,21 @@ class BaseScraper(ABC):
 
     def parse_stores(self, xml_bytes: bytes) -> list[ParsedStore]:
         root = ET.fromstring(xml_bytes)
-        stores_el = root.find(".//Stores") or root.find(".//SubChains")
-        if stores_el is None:
-            return []
-
+        # Chains use different element names: Store (most), Branch (Shufersal)
+        candidates = list(root.iter("Store")) + list(root.iter("Branch"))
+        seen: set[str] = set()
         results = []
-        for store in stores_el.iter("Store"):
+        for el in candidates:
             try:
+                store_id = self._text(el, "StoreId")
+                if not store_id or store_id in seen:
+                    continue
+                seen.add(store_id)
                 results.append(ParsedStore(
-                    store_id=self._text(store, "StoreId"),
-                    name=self._text(store, "StoreName"),
-                    address=self._text(store, "Address"),
-                    city=self._text(store, "City"),
+                    store_id=store_id,
+                    name=self._text(el, "StoreName"),
+                    address=self._text(el, "Address"),
+                    city=self._text(el, "City"),
                 ))
             except Exception as exc:
                 logger.warning("Skipping malformed store: %s", exc)

@@ -94,6 +94,28 @@ class RamiLevyScraper(BaseScraper):
             logger.error("Rami Levy: login failed: %s", exc)
             return False
 
+    def _parse_file_entries(self, data) -> list[RemoteFile]:
+        if isinstance(data, list):
+            entries = data
+        elif isinstance(data, dict):
+            entries = data.get("data", data.get("files", data.get("Data", data.get("result", []))))
+        else:
+            entries = []
+        files = []
+        for entry in entries:
+            if isinstance(entry, str):
+                name = entry
+            else:
+                name = (entry.get("name") or entry.get("fileName")
+                        or entry.get("FileNm") or entry.get("FileName") or "")
+            if name and name.endswith(".gz"):
+                files.append(RemoteFile(
+                    url=f"{BASE_URL}/file/d/{name}",
+                    name=name,
+                    file_type=_detect_type(name),
+                ))
+        return files
+
     def list_files(self) -> list[RemoteFile]:
         if not self._logged_in and not self._login():
             return []
@@ -102,92 +124,72 @@ class RamiLevyScraper(BaseScraper):
         try:
             import time
             ts = int(time.time() * 1000)
-            json_headers = {
-                "Accept": "application/json, text/javascript, */*",
+            ajax_headers = {
+                "Accept": "application/json, text/javascript, */*; q=0.01",
                 "X-Requested-With": "XMLHttpRequest",
                 "Referer": f"{BASE_URL}/file/d",
             }
 
-            # Cerberus known JSON endpoints (tried in order, stop at first success)
-            endpoints = [
+            # Try 1: Kendo UI datasource POST (the JS SPA calls this to populate the grid)
+            for post_url in [f"{BASE_URL}/file/d", f"{BASE_URL}/file"]:
+                try:
+                    r = self.client.post(
+                        post_url,
+                        data={"take": "500", "skip": "0", "page": "1", "pageSize": "500"},
+                        headers={**ajax_headers, "Content-Type": "application/x-www-form-urlencoded"},
+                    )
+                    if r.status_code == 200 and "json" in r.headers.get("content-type", ""):
+                        files = self._parse_file_entries(r.json())
+                        if files:
+                            logger.info("Rami Levy: found %d files via POST %s", len(files), post_url)
+                            return files
+                    logger.debug("Rami Levy POST %s → %d ct=%s preview=%s",
+                                 post_url, r.status_code,
+                                 r.headers.get("content-type", ""), r.text[:200])
+                except Exception as exc:
+                    logger.debug("Rami Levy POST %s error: %s", post_url, exc)
+
+            # Try 2: GET JSON endpoints
+            get_endpoints = [
+                f"/file/d?take=500&skip=0&page=1&pageSize=500&__swhg={ts}",
                 f"/file/json?__swhg={ts}",
                 "/file/json",
-                f"/file/d?__swhg={ts}",
                 "/file/d?format=json",
-                "/file/d?json=1",
             ]
-
-            for endpoint in endpoints:
+            for endpoint in get_endpoints:
                 try:
-                    r = self.client.get(f"{BASE_URL}{endpoint}", headers=json_headers)
+                    r = self.client.get(f"{BASE_URL}{endpoint}", headers=ajax_headers)
                     if "/login" in str(r.url):
                         logger.error("Rami Levy: session expired at %s", endpoint)
                         return []
                     if r.status_code != 200:
-                        logger.debug("Rami Levy %s → %d", endpoint, r.status_code)
                         continue
-
                     content_type = r.headers.get("content-type", "")
-                    logger.debug("Rami Levy %s → %d ct=%s preview=%s",
-                                 endpoint, r.status_code, content_type, r.text[:300])
-
-                    if "json" in content_type:
+                    try:
                         data = r.json()
-                    else:
-                        try:
-                            data = r.json()
-                        except Exception:
-                            # Plain HTML — scan for .gz names
-                            names = re.findall(r'[\w\.\-]+\.gz', r.text)
-                            for name in set(names):
-                                if any(k in name.lower() for k in ["price", "promo", "store"]):
-                                    files.append(RemoteFile(
-                                        url=f"{BASE_URL}/file/d/{name}",
-                                        name=name,
-                                        file_type=_detect_type(name),
-                                    ))
-                            if files:
-                                logger.info("Rami Levy: found %d .gz names in %s HTML", len(files), endpoint)
-                                break
-                            continue
-
-                    # Parse JSON response
-                    if isinstance(data, list):
-                        entries = data
-                    elif isinstance(data, dict):
-                        entries = data.get("data", data.get("files", data.get("Data", [])))
-                    else:
-                        entries = []
-
-                    for entry in entries:
-                        if isinstance(entry, str):
-                            name = entry
-                        else:
-                            name = (entry.get("name") or entry.get("fileName")
-                                    or entry.get("FileNm") or entry.get("FileName") or "")
-                        if name and name.endswith(".gz"):
-                            files.append(RemoteFile(
-                                url=f"{BASE_URL}/file/d/{name}",
-                                name=name,
-                                file_type=_detect_type(name),
-                            ))
-
-                    if files:
-                        logger.info("Rami Levy: found %d files via %s", len(files), endpoint)
-                        break
-                    else:
-                        logger.debug("Rami Levy %s returned 0 entries", endpoint)
-
+                        files = self._parse_file_entries(data)
+                        if files:
+                            logger.info("Rami Levy: found %d files via GET %s", len(files), endpoint)
+                            return files
+                        logger.debug("Rami Levy GET %s → JSON but 0 entries: %s", endpoint, str(data)[:200])
+                    except Exception:
+                        # Not JSON — scan for .gz names in HTML
+                        names = re.findall(r'[\w\.\-]+\.gz', r.text)
+                        gz_names = [n for n in set(names) if any(k in n.lower() for k in ["price", "promo", "store"])]
+                        if gz_names:
+                            files = [RemoteFile(url=f"{BASE_URL}/file/d/{n}", name=n, file_type=_detect_type(n))
+                                     for n in gz_names]
+                            logger.info("Rami Levy: found %d .gz names in HTML at %s", len(files), endpoint)
+                            return files
+                        logger.debug("Rami Levy GET %s ct=%s html_len=%d", endpoint, content_type, len(r.text))
                 except Exception as exc:
-                    logger.debug("Rami Levy %s error: %s", endpoint, exc)
+                    logger.debug("Rami Levy GET %s error: %s", endpoint, exc)
 
-            if not files:
-                logger.warning("Rami Levy: all endpoints returned 0 files")
-
-            logger.info("Rami Levy: total %d files", len(files))
+            logger.warning("Rami Levy: all endpoints returned 0 files")
         except Exception as exc:
             logger.error("Rami Levy: file listing failed: %s", exc)
 
+        logger.info("Rami Levy: total %d files", len(files))
         return files
 
     def download_and_decompress(self, url: str) -> bytes:
