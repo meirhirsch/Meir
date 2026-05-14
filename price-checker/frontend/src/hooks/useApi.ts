@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const BASE = "/api";
+const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
 async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(BASE + path);

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { ProductSummary, ProductDetail, Chain } from "../types";
 import Spinner from "../components/Spinner";
 
-const BASE = "/api";
+const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
 function formatPrice(p: number | null) {
   if (p == null) return "—";
