@@ -76,8 +76,16 @@ class BaseScraper(ABC):
         resp = self.client.get(url)
         resp.raise_for_status()
         data = resp.content
-        if url.endswith(".gz") or data[:2] == b"\x1f\x8b":
-            data = gzip.decompress(data)
+        if data[:2] == b"\x1f\x8b":
+            return gzip.decompress(data)
+        if data[:2] == b"PK":
+            import zipfile, io
+            with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                # Return the first XML-like file inside the ZIP
+                names = zf.namelist()
+                xml_names = [n for n in names if n.lower().endswith(".xml")]
+                target = xml_names[0] if xml_names else names[0]
+                return zf.read(target)
         return data
 
     # ------------------------------------------------------------------ #
