@@ -94,160 +94,77 @@ class RamiLevyScraper(BaseScraper):
             logger.error("Rami Levy: login failed: %s", exc)
             return False
 
-    def _parse_file_entries(self, data) -> list[RemoteFile]:
-        if isinstance(data, list):
-            entries = data
-        elif isinstance(data, dict):
-            entries = data.get("data", data.get("files", data.get("Data", data.get("result", []))))
-        else:
-            entries = []
-        files = []
-        for entry in entries:
-            name = entry if isinstance(entry, str) else (
-                entry.get("name") or entry.get("fileName")
-                or entry.get("FileNm") or entry.get("FileName") or "")
-            if name and name.endswith(".gz"):
-                files.append(RemoteFile(url=f"{BASE_URL}/file/d/{name}",
-                                        name=name, file_type=_detect_type(name)))
-        return files
-
-    def _find_data_url(self, spa_html: str) -> list[str]:
-        """Extract AJAX data URLs from the Cerberus JS bundle."""
-        import urllib.parse
-        candidates = []
-        script_srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', spa_html)
-        for src in script_srcs:
-            url = src if src.startswith("http") else f"{BASE_URL}{src}"
-            try:
-                r = self.client.get(url, timeout=20)
-                if r.status_code != 200:
-                    continue
-                js = r.text
-                # Kendo DataSource read URL patterns
-                for m in re.findall(r'(?:url|read)\s*:\s*["\']([^"\']{3,80})["\']', js):
-                    if any(k in m.lower() for k in ["file", "list", "data", "api"]):
-                        candidates.append(m if m.startswith("http") else f"{BASE_URL}{m}")
-                # fetch() or $.ajax() calls
-                for m in re.findall(r'fetch\(["\']([^"\']{3,80})["\']', js):
-                    candidates.append(m if m.startswith("http") else f"{BASE_URL}{m}")
-                logger.debug("Rami Levy JS %s: found %d candidate URLs", src, len(candidates))
-            except Exception as exc:
-                logger.debug("Rami Levy JS fetch %s: %s", src, exc)
-        return list(dict.fromkeys(candidates))  # deduplicate preserving order
-
     def list_files(self) -> list[RemoteFile]:
         if not self._logged_in and not self._login():
             return []
 
         files: list[RemoteFile] = []
         try:
-            import time
-            ts = int(time.time() * 1000)
-            ajax_headers = {
-                "Accept": "application/json, text/javascript, */*; q=0.01",
-                "X-Requested-With": "XMLHttpRequest",
-                "Referer": f"{BASE_URL}/file/d",
-            }
-
-            # Fetch the SPA shell once
+            # Fetch the SPA shell — it contains the CSRF token for subsequent POSTs
             spa_resp = self.client.get(f"{BASE_URL}/file/d")
             spa_html = spa_resp.text
 
-            # Try 1: Kendo UI datasource POST
-            for post_url in [f"{BASE_URL}/file/d", f"{BASE_URL}/file"]:
-                try:
-                    r = self.client.post(
-                        post_url,
-                        data={"take": "500", "skip": "0", "page": "1", "pageSize": "500"},
-                        headers={**ajax_headers, "Content-Type": "application/x-www-form-urlencoded"},
-                    )
-                    if r.status_code == 200 and "json" in r.headers.get("content-type", ""):
-                        files = self._parse_file_entries(r.json())
-                        if files:
-                            logger.info("Rami Levy: found %d files via POST %s", len(files), post_url)
-                            return files
-                except Exception as exc:
-                    logger.debug("Rami Levy POST %s: %s", post_url, exc)
+            # Extract CSRF token from the page meta tag
+            csrf_match = re.search(r'name="csrftoken"\s+content="([^"]+)"', spa_html)
+            if not csrf_match:
+                csrf_match = re.search(r'csrftoken["\s:]+([A-Za-z0-9_\-]{20,})', spa_html)
+            page_csrf = csrf_match.group(1) if csrf_match else ""
+            logger.debug("Rami Levy page CSRF token: %s", page_csrf)
 
-            # Try 2: common REST GET patterns
-            get_paths = [
-                f"/file/d?take=500&skip=0&page=1&pageSize=500&_={ts}",
-                f"/file/d.json?_={ts}",
-                f"/file/list?_={ts}",
-                "/file/d?format=json",
-                f"/api/file?_={ts}",
-                f"/api/files?_={ts}",
-            ]
-            for path in get_paths:
-                try:
-                    r = self.client.get(f"{BASE_URL}{path}", headers=ajax_headers)
-                    if r.status_code != 200 or "/login" in str(r.url):
-                        continue
-                    try:
-                        data = r.json()
-                        files = self._parse_file_entries(data)
-                        if files:
-                            logger.info("Rami Levy: found %d files via GET %s", len(files), path)
-                            return files
-                        logger.debug("Rami Levy GET %s → JSON 0 entries: %s", path, str(data)[:200])
-                    except Exception:
-                        names = re.findall(r'[\w\.\-]+\.gz', r.text)
-                        gz = [n for n in set(names) if any(k in n.lower() for k in ["price", "promo", "store"])]
-                        if gz:
-                            files = [RemoteFile(url=f"{BASE_URL}/file/d/{n}", name=n,
-                                                file_type=_detect_type(n)) for n in gz]
-                            logger.info("Rami Levy: found %d .gz in HTML at %s", len(files), path)
-                            return files
-                except Exception as exc:
-                    logger.debug("Rami Levy GET %s: %s", path, exc)
-
-            # Try 3: scan JS bundles for the actual data API URL
-            logger.info("Rami Levy: scanning JS bundles for data API endpoint...")
-            data_urls = self._find_data_url(spa_html)
-            logger.info("Rami Levy: JS scan found %d candidate URLs: %s", len(data_urls), data_urls[:10])
-
-            # Also add common cftp listing patterns based on /file/json/ prefix we discovered
-            cftp_listing = [
-                f"{BASE_URL}/file/json/ls",
-                f"{BASE_URL}/file/json/list",
+            # /file/json/dir is the DataTables server-side endpoint for file listing
+            # It requires POST + CSRF token
+            r = self.client.post(
                 f"{BASE_URL}/file/json/dir",
-                f"{BASE_URL}/file/json/files",
-                f"{BASE_URL}/file/json/browse",
-                f"{BASE_URL}/file/json/index",
-            ]
-            all_candidates = cftp_listing + [u for u in data_urls if u not in cftp_listing]
+                data={
+                    "sEcho": "1",
+                    "iDisplayStart": "0",
+                    "iDisplayLength": "1000",
+                    "csrftoken": page_csrf,
+                },
+                headers={
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Referer": f"{BASE_URL}/file/d",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+            logger.debug("Rami Levy /file/json/dir → %d ct=%s body=%s",
+                         r.status_code, r.headers.get("content-type", ""), r.text[:400])
 
-            for url in all_candidates:
-                # Try both GET and POST since some endpoints return 405 on GET
-                for method in ("get", "post"):
-                    try:
-                        if method == "get":
-                            r = self.client.get(url, headers=ajax_headers)
-                        else:
-                            r = self.client.post(
-                                url,
-                                data={"take": "500", "skip": "0", "page": "1", "pageSize": "500"},
-                                headers={**ajax_headers, "Content-Type": "application/x-www-form-urlencoded"},
-                            )
-                        logger.debug("Rami Levy %s %s → %d ct=%s",
-                                     method.upper(), url, r.status_code,
-                                     r.headers.get("content-type", "")[:40])
-                        if r.status_code == 200:
-                            try:
-                                data = r.json()
-                                files = self._parse_file_entries(data)
-                                if files:
-                                    logger.info("Rami Levy: found %d files via %s %s",
-                                                len(files), method.upper(), url)
-                                    return files
-                                logger.debug("Rami Levy %s %s JSON 0 entries: %s",
-                                             method.upper(), url, str(data)[:200])
-                            except Exception:
-                                pass
-                    except Exception as exc:
-                        logger.debug("Rami Levy %s %s: %s", method.upper(), url, exc)
+            if r.status_code == 200:
+                data = r.json()
+                aa_data = data.get("aaData", [])
+                logger.info("Rami Levy /file/json/dir: %d entries, error=%s",
+                            len(aa_data), data.get("error", "none"))
+                for entry in aa_data:
+                    # DataTables rows may be lists or dicts
+                    if isinstance(entry, list):
+                        # Typically: [name_html, size, date, type, ...]
+                        # Extract filename from first element (may contain HTML)
+                        name_raw = str(entry[0]) if entry else ""
+                        name_match = re.search(r'[\w\.\-]+\.gz', name_raw)
+                        name = name_match.group(0) if name_match else ""
+                    elif isinstance(entry, dict):
+                        name = (entry.get("name") or entry.get("FileName")
+                                or entry.get("fileName") or "")
+                        if not name.endswith(".gz"):
+                            # Try extracting from HTML value
+                            name_match = re.search(r'[\w\.\-]+\.gz', str(next(iter(entry.values()), "")))
+                            name = name_match.group(0) if name_match else ""
+                    else:
+                        name = ""
+                    if name and name.endswith(".gz"):
+                        files.append(RemoteFile(
+                            url=f"{BASE_URL}/file/d/{name}",
+                            name=name,
+                            file_type=_detect_type(name),
+                        ))
 
-            logger.warning("Rami Levy: all methods returned 0 files")
+            if files:
+                logger.info("Rami Levy: found %d files via /file/json/dir", len(files))
+            else:
+                logger.warning("Rami Levy: /file/json/dir returned 0 files")
+
         except Exception as exc:
             logger.error("Rami Levy: file listing failed: %s", exc)
 
