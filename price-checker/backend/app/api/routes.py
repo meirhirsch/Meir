@@ -9,7 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Chain, Product, Price, Promotion, SyncLog
+from app.models import Chain, Product, Price, Promotion, SyncLog, Store
 from app.scheduler import trigger_now
 
 router = APIRouter()
@@ -28,6 +28,20 @@ class ChainOut(BaseModel):
         from_attributes = True
 
 
+class StoreOut(BaseModel):
+    id: int
+    chain_id: int
+    store_id: str
+    name: Optional[str]
+    address: Optional[str]
+    city: Optional[str]
+    chain_name: str
+    chain_display_name: str
+
+    class Config:
+        from_attributes = True
+
+
 class PriceOut(BaseModel):
     chain_id: int
     chain_name: str
@@ -36,6 +50,8 @@ class PriceOut(BaseModel):
     unit_measure_price: Optional[float]
     allow_discount: bool
     updated_at: Optional[datetime]
+    store_city: Optional[str]
+    store_address: Optional[str]
 
 
 class ProductOut(BaseModel):
@@ -89,10 +105,35 @@ def list_chains(db: Session = Depends(get_db)):
     return db.query(Chain).all()
 
 
+@router.get("/stores", response_model=list[StoreOut])
+def list_stores(
+    chain_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Store).join(Chain, Chain.id == Store.chain_id)
+    if chain_id:
+        query = query.filter(Store.chain_id == chain_id)
+    stores = query.all()
+    return [
+        StoreOut(
+            id=s.id,
+            chain_id=s.chain_id,
+            store_id=s.store_id,
+            name=s.name,
+            address=s.address,
+            city=s.city,
+            chain_name=s.chain.name,
+            chain_display_name=s.chain.display_name,
+        )
+        for s in stores
+    ]
+
+
 @router.get("/products", response_model=list[ProductSummary])
 def list_products(
     q: Optional[str] = Query(None, description="Search by name or barcode"),
     chain_id: Optional[int] = Query(None),
+    city: Optional[str] = Query(None, description="Filter by store city"),
     skip: int = 0,
     limit: int = Query(200, le=1000),
     db: Session = Depends(get_db),
@@ -106,6 +147,11 @@ def list_products(
 
     if chain_id:
         query = query.filter(Price.chain_id == chain_id)
+
+    if city:
+        query = query.join(Store, Store.id == Price.store_id).filter(
+            Store.city.ilike(f"%{city}%")
+        )
 
     if q:
         like = f"%{q}%"
@@ -148,6 +194,8 @@ def get_product(item_code: str, db: Session = Depends(get_db)):
             unit_measure_price=p.unit_measure_price,
             allow_discount=p.allow_discount,
             updated_at=p.updated_at,
+            store_city=p.store.city if p.store else None,
+            store_address=p.store.address if p.store else None,
         )
         for p in price_rows
     ]

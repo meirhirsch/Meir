@@ -24,6 +24,8 @@ export interface PriceEntry {
   unit_measure_price: number | null;
   allow_discount: boolean;
   updated_at: string | null;
+  store_city: string | null;
+  store_address: string | null;
 }
 
 export interface ProductDetail {

@@ -29,6 +29,7 @@ function PriceCompare({ product }: { product: ProductDetail }) {
           <thead>
             <tr>
               <th>רשת</th>
+              <th>עיר</th>
               <th>מחיר</th>
               <th>מחיר ליחידה</th>
               <th></th>
@@ -38,6 +39,7 @@ function PriceCompare({ product }: { product: ProductDetail }) {
             {sorted.map((p) => (
               <tr key={p.chain_id} className={p.price === min ? "cheapest" : ""}>
                 <td>{p.chain_display_name}</td>
+                <td>{p.store_city ?? "—"}</td>
                 <td className="price-cell">₪{p.price.toFixed(2)}</td>
                 <td>{p.unit_measure_price ? `₪${p.unit_measure_price.toFixed(2)}` : "—"}</td>
                 <td>{p.price === min ? "✓ הזול ביותר" : ""}</td>
@@ -53,17 +55,19 @@ function PriceCompare({ product }: { product: ProductDetail }) {
 export default function ProductsPage({ chains }: { chains: Chain[] }) {
   const [query, setQuery] = useState("");
   const [chainFilter, setChainFilter] = useState<number | "">("");
+  const [cityFilter, setCityFilter] = useState("");
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<ProductDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = useCallback((q: string, chain: number | "") => {
+  const search = useCallback((q: string, chain: number | "", city: string) => {
     setLoading(true);
     const params = new URLSearchParams({ limit: "200" });
     if (q) params.set("q", q);
     if (chain) params.set("chain_id", String(chain));
+    if (city) params.set("city", city);
     fetch(`${BASE}/products?${params}`)
       .then((r) => r.json())
       .then(setProducts)
@@ -72,8 +76,8 @@ export default function ProductsPage({ chains }: { chains: Chain[] }) {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(query, chainFilter), 300);
-  }, [query, chainFilter, search]);
+    debounceRef.current = setTimeout(() => search(query, chainFilter, cityFilter), 300);
+  }, [query, chainFilter, cityFilter, search]);
 
   const openProduct = (item_code: string) => {
     setDetailLoading(true);
@@ -106,6 +110,13 @@ export default function ProductsPage({ chains }: { chains: Chain[] }) {
             </option>
           ))}
         </select>
+        <input
+          type="text"
+          placeholder="סנן לפי עיר..."
+          value={cityFilter}
+          onChange={(e) => setCityFilter(e.target.value)}
+          className="search-input"
+        />
       </div>
 
       <div className="layout">

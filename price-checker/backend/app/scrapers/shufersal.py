@@ -25,6 +25,7 @@ CATEGORIES = {
     2: "prices",   # Price (delta per store)
     3: "promos",   # PromoFull
     4: "promos",   # Promo
+    5: "stores",   # StoresFull (alternate catID)
     6: "stores",   # StoresFull
 }
 
