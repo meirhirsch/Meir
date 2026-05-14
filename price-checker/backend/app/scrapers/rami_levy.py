@@ -204,21 +204,48 @@ class RamiLevyScraper(BaseScraper):
             # Try 3: scan JS bundles for the actual data API URL
             logger.info("Rami Levy: scanning JS bundles for data API endpoint...")
             data_urls = self._find_data_url(spa_html)
-            logger.info("Rami Levy: JS scan found %d candidate URLs: %s", len(data_urls), data_urls[:5])
-            for url in data_urls:
-                try:
-                    r = self.client.get(url, headers=ajax_headers)
-                    if r.status_code == 200:
-                        try:
-                            data = r.json()
-                            files = self._parse_file_entries(data)
-                            if files:
-                                logger.info("Rami Levy: found %d files via JS-discovered %s", len(files), url)
-                                return files
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+            logger.info("Rami Levy: JS scan found %d candidate URLs: %s", len(data_urls), data_urls[:10])
+
+            # Also add common cftp listing patterns based on /file/json/ prefix we discovered
+            cftp_listing = [
+                f"{BASE_URL}/file/json/ls",
+                f"{BASE_URL}/file/json/list",
+                f"{BASE_URL}/file/json/dir",
+                f"{BASE_URL}/file/json/files",
+                f"{BASE_URL}/file/json/browse",
+                f"{BASE_URL}/file/json/index",
+            ]
+            all_candidates = cftp_listing + [u for u in data_urls if u not in cftp_listing]
+
+            for url in all_candidates:
+                # Try both GET and POST since some endpoints return 405 on GET
+                for method in ("get", "post"):
+                    try:
+                        if method == "get":
+                            r = self.client.get(url, headers=ajax_headers)
+                        else:
+                            r = self.client.post(
+                                url,
+                                data={"take": "500", "skip": "0", "page": "1", "pageSize": "500"},
+                                headers={**ajax_headers, "Content-Type": "application/x-www-form-urlencoded"},
+                            )
+                        logger.debug("Rami Levy %s %s → %d ct=%s",
+                                     method.upper(), url, r.status_code,
+                                     r.headers.get("content-type", "")[:40])
+                        if r.status_code == 200:
+                            try:
+                                data = r.json()
+                                files = self._parse_file_entries(data)
+                                if files:
+                                    logger.info("Rami Levy: found %d files via %s %s",
+                                                len(files), method.upper(), url)
+                                    return files
+                                logger.debug("Rami Levy %s %s JSON 0 entries: %s",
+                                             method.upper(), url, str(data)[:200])
+                            except Exception:
+                                pass
+                    except Exception as exc:
+                        logger.debug("Rami Levy %s %s: %s", method.upper(), url, exc)
 
             logger.warning("Rami Levy: all methods returned 0 files")
         except Exception as exc:

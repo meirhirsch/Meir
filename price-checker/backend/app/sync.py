@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 from typing import Type
 
@@ -13,6 +14,16 @@ from app.scrapers import ALL_SCRAPERS
 from app.scrapers.base import BaseScraper, ParsedPrice, ParsedPromo, ParsedStore
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_store_id(filename: str) -> str | None:
+    """Extract the store number from a standard Israeli price filename.
+
+    Format: {Type}{ChainId}-{SubChain}-{StoreId}-{YYYYMMDD}-{HHMMSS}.gz
+    Example: Price7290027600007-001-042-20260514-130000.gz → "042"
+    """
+    m = re.search(r'[A-Za-z]+\d{10,}-\d+-(\d+)-\d{8}', filename)
+    return m.group(1) if m else None
 
 
 def _get_or_create_chain(db: Session, scraper: BaseScraper) -> Chain:
@@ -67,8 +78,10 @@ def _log_sync(db: Session, chain: Chain, file_name: str, file_url: str,
         ))
 
 
-def _upsert_prices(db: Session, chain: Chain, prices: list[ParsedPrice]) -> int:
+def _upsert_prices(db: Session, chain: Chain, prices: list[ParsedPrice],
+                   store: Store | None = None) -> int:
     count = 0
+    store_id = store.id if store else None
     for p in prices:
         product = db.query(Product).filter_by(item_code=p.item_code).first()
         if not product:
@@ -89,13 +102,14 @@ def _upsert_prices(db: Session, chain: Chain, prices: list[ParsedPrice]) -> int:
 
         price_row = (
             db.query(Price)
-            .filter_by(product_id=product.id, chain_id=chain.id, store_id=None)
+            .filter_by(product_id=product.id, chain_id=chain.id, store_id=store_id)
             .first()
         )
         if not price_row:
             db.add(Price(
                 product_id=product.id,
                 chain_id=chain.id,
+                store_id=store_id,
                 price=p.price,
                 unit_measure_price=p.unit_measure_price,
                 allow_discount=p.allow_discount,
@@ -143,7 +157,9 @@ def sync_chain(scraper_class: Type[BaseScraper]) -> dict:
 
                 if rf.file_type == "prices":
                     parsed = scraper.parse_prices(raw)
-                    count = _upsert_prices(db, chain, parsed)
+                    store_id_str = _extract_store_id(rf.name)
+                    store = _get_or_create_store(db, chain, store_id_str) if store_id_str else None
+                    count = _upsert_prices(db, chain, parsed, store)
                 elif rf.file_type == "promos":
                     # Promo upsert: simple insert-or-skip for now
                     parsed = scraper.parse_promos(raw)
