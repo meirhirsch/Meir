@@ -30,7 +30,7 @@ CATEGORIES = {
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
-    "Accept": "application/json",
+    "Accept": "application/json, text/javascript, */*",
     "Referer": "https://prices.shufersal.co.il/",
     "X-Requested-With": "XMLHttpRequest",
 }
@@ -77,9 +77,11 @@ class ShufersalScraper(BaseScraper):
 
         # ── Try JSON API for each category ───────────────────────────────
         for cat_id, file_type in CATEGORIES.items():
+            import time
+            ts = int(time.time() * 1000)
             url = (
                 f"{self.BASE_URL}/FileObject/UpdateCategory"
-                f"?catID={cat_id}&storeId=0&pagingSize=10000&pagingOffset=0"
+                f"?catID={cat_id}&storeId=0&pagingSize=10000&pagingOffset=0&__swhg={ts}"
             )
             try:
                 resp = self.client.get(url, headers=HEADERS)

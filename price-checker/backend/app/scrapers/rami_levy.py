@@ -62,31 +62,30 @@ class RamiLevyScraper(BaseScraper):
 
     def _login(self) -> bool:
         try:
-            # Step 1: GET login page to pick up session cookie + find form fields
+            # Step 1: GET login page — pick up session cookie + extract CSRF token
             login_page = self.client.get(f"{BASE_URL}/login")
-            logger.debug("Rami Levy login page: %s", login_page.text[:500])
+            csrf = re.search(r'name="csrftoken"\s+content="([^"]+)"', login_page.text)
+            if not csrf:
+                csrf = re.search(r'csrftoken["\s:]+([A-Za-z0-9_\-]{20,})', login_page.text)
+            csrf_token = csrf.group(1) if csrf else ""
+            logger.debug("Rami Levy CSRF token: %s", csrf_token)
 
-            # Step 2: Try all known field-name variants for the username
-            for user_field in ["username", "user", "email", "UserName"]:
-                resp = self.client.post(
-                    f"{BASE_URL}/login/user",
-                    data={user_field: USERNAME, "password": PASSWORD},
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                )
-                logger.debug(
-                    "Rami Levy POST %s=%s → %s cookies=%s body=%s",
-                    user_field, USERNAME, resp.status_code,
-                    dict(self.client.cookies), resp.text[:300],
-                )
-                # Step 3: Check if /file/d is accessible
-                check = self.client.get(f"{BASE_URL}/file/d")
-                if "/login" not in str(check.url):
-                    self._logged_in = True
-                    logger.info("Rami Levy: logged in (field=%s)", user_field)
-                    return True
-                logger.warning("Rami Levy: field=%s didn't work, trying next", user_field)
+            # Step 2: POST with CSRF token
+            resp = self.client.post(
+                f"{BASE_URL}/login/user",
+                data={"username": USERNAME, "password": PASSWORD, "csrftoken": csrf_token},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            logger.debug("Rami Levy POST → %s cookies=%s", resp.status_code, dict(self.client.cookies))
 
-            logger.error("Rami Levy: all login attempts failed")
+            # Step 3: Verify session works
+            check = self.client.get(f"{BASE_URL}/file/d")
+            if "/login" not in str(check.url):
+                self._logged_in = True
+                logger.info("Rami Levy: logged in successfully")
+                return True
+
+            logger.error("Rami Levy: login failed — still redirected to login page")
             return False
         except Exception as exc:
             logger.error("Rami Levy: login failed: %s", exc)
