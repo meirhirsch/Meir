@@ -53,6 +53,7 @@ class RamiLevyScraper(BaseScraper):
         self.client = httpx.Client(
             timeout=60,
             follow_redirects=True,
+            verify=False,  # Cerberus uses a self-signed/corporate cert on Windows
             headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
             },

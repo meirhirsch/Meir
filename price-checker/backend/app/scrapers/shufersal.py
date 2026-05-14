@@ -8,6 +8,7 @@ Files are served with expiring SAS tokens so URLs are fetched fresh each sync.
 """
 from __future__ import annotations
 
+import html
 import logging
 import re
 from datetime import datetime
@@ -99,6 +100,7 @@ class ShufersalScraper(BaseScraper):
                 resp.raise_for_status()
                 urls = re.findall(r'https://[^"\']+\.gz(?:\?[^"\']*)?', resp.text)
                 for file_url in urls:
+                    file_url = html.unescape(file_url)  # fix &amp; → &
                     file_name = _strip_sas(file_url)
                     files.append(RemoteFile(
                         url=file_url,
