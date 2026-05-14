@@ -2,7 +2,9 @@
 Shufersal publishes price files on Azure Blob Storage.
 The listing is available via their JSON API:
   https://prices.shufersal.co.il/FileObject/UpdateCategory?catID=<N>&storeId=0&pagingSize=10000&pagingOffset=0
-catID=2 → PriceFull  catID=4 → PromoFull  catID=6 → StoresFull
+
+Known catIDs:
+  1 → PriceFull   2 → Price   3 → PromoFull   4 → Promo   6 → StoresFull
 
 Files are served with expiring SAS tokens so URLs are fetched fresh each sync.
 """
@@ -17,16 +19,20 @@ from app.scrapers.base import BaseScraper, RemoteFile
 
 logger = logging.getLogger(__name__)
 
+# Try all known catIDs — PriceFull (1) gives the complete product catalog
 CATEGORIES = {
-    2: "prices",
-    4: "promos",
-    6: "stores",
+    1: "prices",   # PriceFull
+    2: "prices",   # Price (delta per store)
+    3: "promos",   # PromoFull
+    4: "promos",   # Promo
+    6: "stores",   # StoresFull
 }
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
-    "Accept": "application/json, text/html, */*",
+    "Accept": "application/json",
     "Referer": "https://prices.shufersal.co.il/",
+    "X-Requested-With": "XMLHttpRequest",
 }
 
 FILE_TYPE_MAP = {
@@ -40,7 +46,7 @@ FILE_TYPE_MAP = {
 
 
 def _detect_type(name: str) -> str:
-    lower = name.lower().split("?")[0]  # strip SAS query params
+    lower = name.lower().split("?")[0]
     for key, val in FILE_TYPE_MAP.items():
         if key in lower:
             return val
@@ -48,7 +54,7 @@ def _detect_type(name: str) -> str:
 
 
 def _strip_sas(url: str) -> str:
-    """Return the base filename without SAS token for use as a stable key."""
+    """Return the base filename without SAS token — used as a stable dedup key."""
     return url.split("?")[0].split("/")[-1]
 
 
@@ -60,8 +66,16 @@ class ShufersalScraper(BaseScraper):
 
     def list_files(self) -> list[RemoteFile]:
         files: list[RemoteFile] = []
+        seen_names: set[str] = set()
 
-        # Try JSON API first
+        def add(file_url: str, file_type: str, modified=None):
+            file_url = html.unescape(file_url)
+            name = _strip_sas(file_url)
+            if name not in seen_names:
+                seen_names.add(name)
+                files.append(RemoteFile(url=file_url, name=name, file_type=file_type, modified=modified))
+
+        # ── Try JSON API for each category ───────────────────────────────
         for cat_id, file_type in CATEGORIES.items():
             url = (
                 f"{self.BASE_URL}/FileObject/UpdateCategory"
@@ -71,11 +85,11 @@ class ShufersalScraper(BaseScraper):
                 resp = self.client.get(url, headers=HEADERS)
                 resp.raise_for_status()
                 data = resp.json()
+                before = len(files)
                 for entry in data.get("Data", []):
                     file_url = entry.get("FileNm", "")
                     if not file_url:
                         continue
-                    file_name = _strip_sas(file_url)
                     modified_raw = entry.get("FileVldDt", "")
                     modified = None
                     if modified_raw:
@@ -83,32 +97,21 @@ class ShufersalScraper(BaseScraper):
                             modified = datetime.strptime(modified_raw[:19], "%Y-%m-%dT%H:%M:%S")
                         except ValueError:
                             pass
-                    files.append(RemoteFile(
-                        url=file_url,
-                        name=file_name,
-                        file_type=file_type,
-                        modified=modified,
-                    ))
-                logger.info("Shufersal API catID=%d: %d files", cat_id, len(files))
+                    add(file_url, file_type, modified)
+                logger.info("Shufersal API catID=%d: +%d files", cat_id, len(files) - before)
             except Exception as exc:
-                logger.warning("Shufersal JSON API (catID=%d) failed: %s — trying HTML fallback", cat_id, exc)
+                logger.warning("Shufersal JSON API catID=%d failed: %s", cat_id, exc)
 
-        # HTML fallback: parse blob.core.windows.net links directly from the page
+        # ── HTML fallback: scrape all .gz links from the main page ────────
         if not files:
             try:
-                resp = self.client.get(self.BASE_URL, headers=HEADERS)
+                resp = self.client.get(self.BASE_URL, headers={**HEADERS, "Accept": "text/html"})
                 resp.raise_for_status()
-                urls = re.findall(r'https://[^"\']+\.gz(?:\?[^"\']*)?', resp.text)
-                for file_url in urls:
-                    file_url = html.unescape(file_url)  # fix &amp; → &
-                    file_name = _strip_sas(file_url)
-                    files.append(RemoteFile(
-                        url=file_url,
-                        name=file_name,
-                        file_type=_detect_type(file_name),
-                    ))
+                for file_url in re.findall(r'https://[^"\'<>\s]+\.gz(?:\?[^"\'<>\s]*)?', resp.text):
+                    add(file_url, _detect_type(file_url))
                 logger.info("Shufersal HTML fallback: %d files", len(files))
             except Exception as exc:
                 logger.error("Shufersal HTML fallback failed: %s", exc)
 
+        logger.info("Shufersal total: %d unique files", len(files))
         return files

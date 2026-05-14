@@ -94,7 +94,7 @@ def list_products(
     q: Optional[str] = Query(None, description="Search by name or barcode"),
     chain_id: Optional[int] = Query(None),
     skip: int = 0,
-    limit: int = Query(50, le=200),
+    limit: int = Query(200, le=1000),
     db: Session = Depends(get_db),
 ):
     query = db.query(

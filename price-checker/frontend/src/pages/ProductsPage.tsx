@@ -61,7 +61,7 @@ export default function ProductsPage({ chains }: { chains: Chain[] }) {
 
   const search = useCallback((q: string, chain: number | "") => {
     setLoading(true);
-    const params = new URLSearchParams({ limit: "50" });
+    const params = new URLSearchParams({ limit: "200" });
     if (q) params.set("q", q);
     if (chain) params.set("chain_id", String(chain));
     fetch(`${BASE}/products?${params}`)
