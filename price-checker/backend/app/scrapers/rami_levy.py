@@ -97,42 +97,40 @@ class RamiLevyScraper(BaseScraper):
 
         files: list[RemoteFile] = []
         try:
-            resp = self.client.get(f"{BASE_URL}/file/d")
-            if "/login" in str(resp.url):
-                logger.error("Rami Levy: session expired, re-logging in")
-                self._logged_in = False
-                if not self._login():
-                    return []
-                resp = self.client.get(f"{BASE_URL}/file/d")
-            logger.debug("Rami Levy /file/d response (%d bytes): %s", len(resp.text), resp.text[:500])
-            resp.raise_for_status()
+            # Cerberus is a JS SPA — request the file list as JSON via API
+            for endpoint in ["/file/json", "/file/d/json", "/api/file/d"]:
+                resp = self.client.get(
+                    f"{BASE_URL}{endpoint}",
+                    headers={"Accept": "application/json, */*", "X-Requested-With": "XMLHttpRequest"},
+                )
+                if resp.status_code == 200 and "/login" not in str(resp.url):
+                    try:
+                        data = resp.json()
+                        logger.debug("Rami Levy %s JSON: %s", endpoint, str(data)[:300])
+                        entries = data if isinstance(data, list) else data.get("files", data.get("data", []))
+                        for entry in entries:
+                            name = entry.get("name", "") or entry.get("fileName", "") or entry.get("file_name", "")
+                            if name and name.endswith(".gz"):
+                                files.append(RemoteFile(
+                                    url=f"{BASE_URL}/file/d/{name}",
+                                    name=name,
+                                    file_type=_detect_type(name),
+                                ))
+                        if files:
+                            logger.info("Rami Levy: found %d files via %s", len(files), endpoint)
+                            break
+                    except Exception as e:
+                        logger.debug("Rami Levy %s not JSON: %s | preview: %s", endpoint, e, resp.text[:200])
 
-            # Response may be JSON or HTML directory listing
-            try:
-                data = resp.json()
-                entries = data if isinstance(data, list) else data.get("files", [])
-                for entry in entries:
-                    name = entry.get("name", "") or entry.get("fileName", "")
-                    if not name:
-                        continue
-                    files.append(RemoteFile(
-                        url=f"{BASE_URL}/file/d/{name}",
-                        name=name,
-                        file_type=_detect_type(name),
-                    ))
-            except Exception:
-                # Fallback: parse HTML directory listing for .gz links
-                hrefs = re.findall(r'href="([^"]*\.gz)"', resp.text)
+            # Fallback: parse HTML for .gz hrefs
+            if not files:
+                resp = self.client.get(f"{BASE_URL}/file/d")
+                hrefs = re.findall(r'href=["\']([^"\']+\.gz)["\']', resp.text)
                 for href in hrefs:
                     name = href.split("/")[-1]
                     url = href if href.startswith("http") else f"{BASE_URL}/file/d/{name}"
-                    files.append(RemoteFile(
-                        url=url,
-                        name=name,
-                        file_type=_detect_type(name),
-                    ))
-
-            logger.info("Rami Levy: found %d files", len(files))
+                    files.append(RemoteFile(url=url, name=name, file_type=_detect_type(name)))
+                logger.info("Rami Levy: found %d files via HTML fallback", len(files))
         except Exception as exc:
             logger.error("Rami Levy: file listing failed: %s", exc)
 
