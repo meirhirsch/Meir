@@ -36,8 +36,8 @@ function PriceCompare({ product }: { product: ProductDetail }) {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((p) => (
-              <tr key={p.chain_id} className={p.price === min ? "cheapest" : ""}>
+            {sorted.map((p, i) => (
+              <tr key={`${p.chain_id}-${i}`} className={p.price === min ? "cheapest" : ""}>
                 <td>{p.chain_display_name}</td>
                 <td>{p.store_city ?? "—"}</td>
                 <td className="price-cell">₪{p.price.toFixed(2)}</td>
