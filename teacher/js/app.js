@@ -278,7 +278,13 @@
     var skip = app.querySelector("[data-skip]");
     skip.addEventListener("click", function () {
       var target = document.getElementById("lesson");
-      if (target) target.focus();
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      var root = document.documentElement;
+      var previous = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";
+      target.scrollIntoView({ block: "start", inline: "nearest" });
+      root.style.scrollBehavior = previous;
     });
     var reset = app.querySelector("[data-reset]");
     reset.addEventListener("click", function () {
