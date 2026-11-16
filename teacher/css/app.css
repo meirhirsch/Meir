@@ -62,8 +62,11 @@ bdi[lang="he"] {
   left: 12px;
   top: -40px;
   background: #fff;
+  border: 0;
+  color: inherit;
   padding: 6px 10px;
   z-index: 5;
+  cursor: pointer;
 }
 .skip:focus { top: 8px; }
 

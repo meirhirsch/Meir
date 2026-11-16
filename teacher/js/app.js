@@ -87,9 +87,21 @@
     return { done: done, total: course.lessons.length, checks: checks, checksDone: checksDone };
   }
 
+  var shown = { courseId: courses[0].id, lessonId: courses[0].lessons[0].id };
+
+  function hashHead() {
+    var parts = location.hash.replace(/^#/, "").split("/").filter(Boolean);
+    return parts[0] || "";
+  }
+
+  function isRouteHash() {
+    var head = hashHead();
+    return !head || !!byCourse[head];
+  }
+
   function parse() {
     var parts = location.hash.replace(/^#/, "").split("/").filter(Boolean);
-    var course = byCourse[parts[0]] || courses[0];
+    var course = byCourse[parts[0]] || byCourse[shown.courseId] || courses[0];
     var lesson = null;
     var i;
     for (i = 0; i < course.lessons.length; i += 1) {
@@ -207,14 +219,14 @@
       (prev ? "<a href='#/" + course.id + "/" + prev.id + "'>Previous: " + esc(prev.title) + "</a>" : "<span></span>") +
       (next ? "<a href='#/" + course.id + "/" + next.id + "'>Next: " + esc(next.title) + "</a>" : "<span></span>") +
       "</div>";
-    return "<a class='skip' href='#lesson'>Skip to the lesson</a>" +
+    return "<button type='button' class='skip' data-skip>Skip to the lesson</button>" +
       "<header class='top'><div class='brand'><div class='eyebrow'>Study desk</div><h1>" + esc(course.name) +
       "</h1><p>" + esc(course.place) + "</p></div><div class='top-side'><nav class='switch' aria-label='Courses'>" +
       switcher + "</nav><div class='meter' data-stat='meter' aria-live='polite'><strong>" + stats.done + " of " +
       stats.total + "</strong> lessons finished · " + stats.checksDone + " of " + stats.checks + " checks</div></div></header>" +
       "<div class='layout'><aside class='side'><p class='side-kicker'>" + esc(course.place) + "</p><p class='side-blurb'>" +
       esc(course.blurb) + "</p><ol class='lessons'>" + items + "</ol><button type='button' class='reset' data-reset>Clear saved progress</button></aside>" +
-      "<main class='main' id='lesson'><h2>" + esc(lesson.title) + "</h2><p class='lede'>" + rich(lesson.lede) +
+      "<main class='main' id='lesson' tabindex='-1'><h2>" + esc(lesson.title) + "</h2><p class='lede'>" + rich(lesson.lede) +
       "</p><div class='prose'>" + blocks + "</div><section class='checks' aria-labelledby='check-h'><h3 id='check-h'>Check</h3>" +
       "<p class='check-count' data-stat='lesson'>" + score.n + " of " + score.total + " checks in this lesson</p>" +
       checks + "</section>" + nav + "<p class='foot-note'>" + (course.id === "priority"
@@ -263,6 +275,11 @@
   }
 
   function bind(course, lesson) {
+    var skip = app.querySelector("[data-skip]");
+    skip.addEventListener("click", function () {
+      var target = document.getElementById("lesson");
+      if (target) target.focus();
+    });
     var reset = app.querySelector("[data-reset]");
     reset.addEventListener("click", function () {
       if (window.confirm("Clear every saved check for both courses in this browser?")) {
@@ -540,13 +557,24 @@
     var route = parse();
     document.title = route.lesson.title + " · " + route.course.name;
     document.body.dataset.course = route.course.id;
+    shown.courseId = route.course.id;
+    shown.lessonId = route.lesson.id;
     progress.last[route.course.id] = route.lesson.id;
     save();
     app.innerHTML = shell(route.course, route.lesson);
     bind(route.course, route.lesson);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }
 
-  window.addEventListener("hashchange", render);
-  if (!location.hash) location.hash = "#/jmp/open";
+  window.addEventListener("hashchange", function () {
+    if (!isRouteHash()) {
+      var restore = "#/" + shown.courseId + "/" + shown.lessonId;
+      if (location.hash !== restore) location.hash = restore;
+      return;
+    }
+    render();
+  });
+  if (!location.hash || !isRouteHash()) location.hash = "#/" + shown.courseId + "/" + shown.lessonId;
   render();
 })();
