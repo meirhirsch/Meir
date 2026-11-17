@@ -750,7 +750,7 @@ window.TEACHER = {
             { t: "h", text: "Overlay" },
             { t: "p", text: "Use it when several measurements share the same X, such as two process yields across the same months, and you want them on one picture. Graph Builder: drop both measurements on Y. Add a legend so the series stay distinct." },
             { t: "h", text: "Bubble plot" },
-            { t: "p", text: "Use it when a point should move through time and its size should carry a third amount, such as subscriptions by region across years. This is not Graph Builder. Open Graph, then Bubble Plot. Set Y, X (often the year), and an ID so each bubble is one region or one lot." },
+            { t: "p", text: "Use it when each region or lot should be its own bubble, the bubble should move as the years play, and the size should show an amount such as subscriptions. This is not Graph Builder. Open Graph, then Bubble Plot. Put the year in Time. That is what animates the bubbles. Put subscriptions in Sizes. That is what makes them grow and shrink. Put the region or the lot in ID, so each bubble is one of those. Y is the measure on the vertical axis. X is a second measure, not the year. Year on X, with Time left empty, stays a still plot." },
             { t: "h", text: "Heat map" },
             { t: "p", text: "Use it for a grid: two categories, and a color that shows the measurement in each cell, such as region by year. Graph Builder: one category on Y, the other on X, then the heat map icon. Color by the measurement." },
             { t: "h", text: "Map" },
@@ -827,13 +827,13 @@ window.TEACHER = {
               id: "bubble",
               prompt: "You want one bubble per region, moving across years, sized by subscriptions. Where do you open it?",
               options: [
-                { id: "a", text: "Graph, then Bubble Plot, with an ID for the region" },
+                { id: "a", text: "Graph, then Bubble Plot: year in Time, subscriptions in Sizes, region in ID" },
                 { id: "b", text: "Analyze, then Distribution" },
                 { id: "c", text: "A mosaic plot of region by year" }
               ],
               answer: "a",
               why: {
-                a: "Bubble Plot is its own item under Graph. The ID is what makes each bubble one region.",
+                a: "Time plays the years. Sizes draws the subscriptions. ID makes each bubble one region. Year on X does not move the plot.",
                 b: "Distribution describes columns one at a time. It does not move a point through years.",
                 c: "A mosaic shows counts of two categories. It has no bubble moving through time."
               }
