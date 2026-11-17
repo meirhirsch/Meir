@@ -719,15 +719,42 @@ window.TEACHER = {
           blocks: [
             { t: "p", text: "Exploratory data analysis is numerical summaries and pictures, used to learn what the sample actually looks like. You are not confirming a theory yet. You are seeing shape, center, spread, odd points, and which columns move together." },
             { t: "h", text: "One continuous column" },
-            { t: "p", text: "Analyze, then Distribution. Put the measurement in Y. A histogram shows shape. A box plot shows the median, the middle half, and points that sit far out. Mean and median describe the center. The range and the interquartile range describe spread without squaring anything. Variance and standard deviation describe spread around the mean." },
+            { t: "p", text: "Analyze, then Distribution. Put the measurement in Y. The histogram and the box plot come up together, with the mean, the median, and the spread. Variance and standard deviation describe spread around the mean. The range and the interquartile range describe spread without squaring anything." },
             { t: "p", text: "Columns Viewer and Tabulate summarize many continuous columns, or a continuous column split by a category such as reactor. Hide and exclude are different: hide removes a point from a graph, exclude removes it from the calculations. Do both when a point is a typing error. Do neither just because the point is inconvenient." },
-            { t: "h", text: "More than one column" },
-            { t: "ul", items: [
-              "**Graph Builder**, the first item under Graph, draws a scatterplot, a run chart, or side-by-side boxes. Drag a column to a zone.",
-              "**Fit Y by X** and a **scatterplot matrix** show several pairs at once.",
-              "Categories use counts and percents, then a bar chart or a mosaic plot. A Pareto plot sorts the bars so the largest problems are on the left.",
-              "Many levels: a packed bar chart, a tree map, or a local data filter. Several groups at once: a trellis, an overlay, a bubble plot, or a heat map. Places: a map from names or from coordinates."
-            ] },
+            { t: "h", text: "Which graph, and how you open it" },
+            { t: "p", text: "Pick the graph from the question, then open that one. Graph Builder is Graph, then Graph Builder. Drag a column into a zone, then click the icon for the element you want: points, bars, a line, a tree map, a heat map." },
+            { t: "h", text: "Histogram" },
+            { t: "p", text: "Use it for the shape of one continuous column: one peak, two peaks, or a long tail. Open Analyze, then Distribution, and put the column in Y. Choose Histograms Only when you want the bars without the other summaries." },
+            { t: "h", text: "Box plot" },
+            { t: "p", text: "Use it for the center, the middle half, and points that sit far out. One column: the box plot is already in Distribution. Several groups, such as reactors: Graph Builder, the measurement on Y, the group on X, then the box plot icon." },
+            { t: "h", text: "Normal quantile plot" },
+            { t: "p", text: "Use it to judge whether a continuous column is roughly bell-shaped. Points along a line are close to normal. A curve means a tail. Open Distribution, then the red triangle beside that column, and choose the normal quantile plot. Continuous Fit, then Normal, draws the curve on the histogram." },
+            { t: "h", text: "Scatterplot" },
+            { t: "p", text: "Use it when both columns are continuous and you need to see a line, a curve, a fan shape, or a clump. Graph Builder: one column on Y, the other on X. A smoother is optional. Do not quote a correlation until you have seen this picture." },
+            { t: "h", text: "Scatterplot matrix" },
+            { t: "p", text: "Use it when you have several continuous columns and you want every pair at once, to see which pairs are worth a closer look. Open Graph, then Scatterplot Matrix, and put those columns in Y." },
+            { t: "h", text: "Run chart" },
+            { t: "p", text: "Use it when the rows are in time order, or batch order, and you want to know whether the measurement drifted, jumped, or cycled. A histogram throws that order away. Graph Builder: time or batch on X, the measurement on Y, then the line icon." },
+            { t: "h", text: "Bar chart" },
+            { t: "p", text: "Use it for how often each category occurs, or for a summary such as a mean in each category. Graph Builder: the category on an axis, then the bar icon. A nominal column in Distribution also draws bars with counts. Sort the bars when you care which categories are largest." },
+            { t: "h", text: "Pareto plot" },
+            { t: "p", text: "Use it when many categories are problems and you want the few that account for most of them, largest on the left. Graph Builder: the category on X, the count on the bar length, the bar icon, then order the bars from largest to smallest." },
+            { t: "h", text: "Mosaic plot" },
+            { t: "p", text: "Use it for two categories together: whether fail and pass sit in the same pattern inside each reactor, for example. Analyze, then Fit Y by X. Put one nominal column in Y and the other in X. The widths and heights are the counts." },
+            { t: "h", text: "Packed bar chart" },
+            { t: "p", text: "Use it for one category with so many levels that an ordinary bar chart becomes a long scroll, such as dozens of company names. Graph Builder: the category on Y, the bar icon, then the packed bar element so the bars fill a block instead of a list." },
+            { t: "h", text: "Tree map" },
+            { t: "p", text: "Use it when many categories should be compared by size, and the biggest ones should dominate the picture. Graph Builder: the category on X, the tree map icon, and a continuous column to size the rectangles." },
+            { t: "h", text: "Trellis" },
+            { t: "p", text: "Use it when you already have a graph and you want that same graph repeated once per group, instead of crowding every group onto one set of axes. Build the graph in Graph Builder, then put the grouping column in Wrap or Page." },
+            { t: "h", text: "Overlay" },
+            { t: "p", text: "Use it when several measurements share the same X, such as two process yields across the same months, and you want them on one picture. Graph Builder: drop both measurements on Y. Add a legend so the series stay distinct." },
+            { t: "h", text: "Bubble plot" },
+            { t: "p", text: "Use it when a point should move through time and its size should carry a third amount, such as subscriptions by region across years. This is not Graph Builder. Open Graph, then Bubble Plot. Set Y, X (often the year), and an ID so each bubble is one region or one lot." },
+            { t: "h", text: "Heat map" },
+            { t: "p", text: "Use it for a grid: two categories, and a color that shows the measurement in each cell, such as region by year. Graph Builder: one category on Y, the other on X, then the heat map icon. Color by the measurement." },
+            { t: "h", text: "Map" },
+            { t: "p", text: "Use it when the question is where, not only how much. If the column is a place name JMP recognizes, such as a country or region, open Graph Builder and use the map shapes. If you have latitude and longitude, open Graph Builder and drag both into the middle of the frame. A local data filter, from the red triangle, steps that map through years or groups without drawing a new graph each time." },
             { t: "h", text: "Shape, and then the audience" },
             { t: "p", text: "A normal quantile plot is a check, not a pass-fail stamp. Points along a straight line look roughly normal. A curve means a tail. The central limit theorem is why averages from even a skewed process can look normal if each average is of enough rows. That is about the average, not about every individual measurement." },
             { t: "p", text: "A graph for yourself can be dense. A graph for someone else answers one practical question and leaves out ink that does not serve it. Customize titles and axes in Graph Builder. Save the steps as a script on the table so you can rerun them. A journal holds the story. People without JMP get a static image, not your live table." },
@@ -779,6 +806,36 @@ window.TEACHER = {
                 a: "Most analyses want the observation in the row and the variable in the column. Stack builds that grid.",
                 b: "Averaging throws away the five readings the analysis was going to use.",
                 c: "The modeling type is a separate decision, and size is continuous."
+              }
+            },
+            {
+              id: "run",
+              prompt: "Impurity might have drifted as the batches were made. Which graph keeps that order?",
+              options: [
+                { id: "a", text: "A run chart: Graph Builder, batch on X, impurity on Y, line icon" },
+                { id: "b", text: "A histogram of impurity" },
+                { id: "c", text: "A tree map of the batch numbers" }
+              ],
+              answer: "a",
+              why: {
+                a: "A run chart keeps the sequence. That is the picture for drift, a jump, or a cycle.",
+                b: "A histogram shows the shape and throws the batch order away.",
+                c: "A tree map sizes categories. Batch numbers are not a size comparison, and the order of manufacture disappears."
+              }
+            },
+            {
+              id: "bubble",
+              prompt: "You want one bubble per region, moving across years, sized by subscriptions. Where do you open it?",
+              options: [
+                { id: "a", text: "Graph, then Bubble Plot, with an ID for the region" },
+                { id: "b", text: "Analyze, then Distribution" },
+                { id: "c", text: "A mosaic plot of region by year" }
+              ],
+              answer: "a",
+              why: {
+                a: "Bubble Plot is its own item under Graph. The ID is what makes each bubble one region.",
+                b: "Distribution describes columns one at a time. It does not move a point through years.",
+                c: "A mosaic shows counts of two categories. It has no bubble moving through time."
               }
             }
           ]
