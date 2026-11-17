@@ -18,6 +18,6 @@ There is no login. Checks and the lesson you last opened are stored in this brow
 
 ## What you study
 
-JMP, first: opening a table, Distribution, Graph Builder, intervals and tests, ANOVA and regression with a look at diagnostics, and a first custom design. The SAS program page at `learn.sas.com` program id 180 is not publicly readable (it only shows an access message). The lessons follow the public JMP modules in Statistical Thinking for Industrial Problem Solving and the JMP topics named on the public learn.sas.com course that lists JMP.
+JMP, first: Statistical Thinking for Industrial Problem Solving, modules 0 through 7, in that order. Frame a problem, explore the table, separate signal from noise, decide with intervals and tests, fit a relationship, design an experiment, then predict and read text.
 
 Priority, second and longer: how a company is organized in the system, how a form actually behaves, customers and the part card, the sales chain, the purchasing chain, warehouse balances, planning, and what finalizing posts to the books.

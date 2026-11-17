@@ -575,425 +575,543 @@ window.TEACHER = {
       id: "jmp",
       name: "JMP",
       place: "First course",
-      blurb: "SAS JMP. Start here: open a table, read a distribution, build a graph, test a comparison, fit a line, and lay out a small experiment.",
+      blurb: "SAS JMP, following Statistical Thinking for Industrial Problem Solving: eight modules, from how to frame a problem through graphs, quality, tests, regression, experiments, and prediction.",
       lessons: [
         {
-          id: "open",
-          title: "Open a table and set the columns",
-          lede: "Rows are observations. Columns are variables. JMP chooses the analysis from the modeling type, so set that before you trust a mean.",
+          id: "overview",
+          title: "Module 0: What this course is for",
+          lede: "Eight modules, one habit: a process varies, that variation is information, and JMP is where you look at it.",
           blocks: [
-            { t: "note", kind: "note", title: "Where this course comes from", text: "The SAS program page at learn.sas.com, program id 180, is not publicly readable. Signed out, it says “You cannot currently access this program” and offers Sign in. No title, outline, or lab list is shown. These lessons follow the public JMP modules in Statistical Thinking for Industrial Problem Solving — exploratory data analysis, decision making with data, correlation and regression, and design of experiments — and the JMP topics named on the public learn.sas.com course that lists JMP: descriptive graphs, t tests, ANOVA, simple and polynomial regression, diagnostics, and a short look at a covariate. Menus match recent JMP." },
-            { t: "p", text: "JMP’s unit of work is the data table. File > Open reads CSV, Excel, text, and JMP files, among others. An Excel workbook asks which sheet. After the table opens, the columns panel is on the left. The icon is the modeling type." },
+            { t: "p", text: "This course follows Statistical Thinking for Industrial Problem Solving, in the order of its modules. Module 0 is the map. The later modules are the work: frame the problem, explore the data, separate signal from noise, decide with intervals and tests, fit relationships, design an experiment, then predict." },
+            { t: "h", text: "Why the foundation comes first" },
+            { t: "p", text: "Every process wanders. A yield, a thickness, a scrap rate, a complaint. If you only react to the last bad batch, you chase noise. Statistical thinking treats that wander as something you can measure, picture, and learn from. The point of the course is not a catalog of tests. It is a way to close the gap between how a process performs and how it needs to perform." },
+            { t: "h", text: "JMP starts as a table" },
+            { t: "p", text: "The getting-started video puts you in a data table. Rows are the things you measured: batches, parts, runs. Columns are the measurements and the labels. JMP decides which analysis fits from the modeling type on the column, so set that before you trust a mean." },
             { t: "ul", items: [
-              "**Continuous** (blue triangle): a measurement, such as a quantity or a temperature.",
-              "**Nominal** (red bars): categories with no order, such as a warehouse, a vendor, or an invoice number.",
-              "**Ordinal** (green bars): categories with an order, such as small, medium, large."
+              "**Continuous**: a measurement, such as yield or temperature. The icon is a blue triangle.",
+              "**Nominal**: a name, such as supplier, shift, or lot. Red bars. An id made of digits is still a name.",
+              "**Ordinal**: an order you mean, such as low, medium, high. Green bars."
             ] },
-            { t: "p", text: "Set the type before you analyze. Click the column name, or use Cols > Column Info, and set Modeling Type. A customer id stored as a number is nominal. Left as continuous, Distribution will offer a mean of id numbers, which is not a quantity of anything." },
-            { t: "p", text: "A missing numeric value displays as a dot (·). It is not a zero. A zero is a measured zero. Analyses say how many missing values they excluded. Read that line before you trust N." },
-            { t: "ol", items: [
-              "File > Open, and choose the file.",
-              "Click the column header for the variable you will analyze.",
-              "Column Info, then Modeling Type.",
-              "OK. Then look at the icon in the columns panel and confirm it."
-            ] },
-            { t: "note", kind: "example", title: "A shipment sheet", text: "Columns: Customer, Warehouse, Qty, InvoiceNo. Qty is continuous. Customer and Warehouse are nominal. InvoiceNo is nominal even though it looks numeric. A blank Qty is a dot, and it stays out of the mean." }
+            { t: "p", text: "A missing number shows as a dot. It is not a zero. A zero was measured. A dot was not. Later analyses tell you how many rows they set aside. Read that count before you trust the result." },
+            { t: "note", kind: "screen", title: "How you will work", text: "File, then Open, brings in a JMP table, a spreadsheet, or a text file. The columns panel is on the left. Click a column name to open Column Info and set the modeling type. The icon in the panel should match what the column really is. Save the table. The later modules reuse the same habit: one table, columns typed, then a platform from the Analyze or Graph menu." }
           ],
           checks: [
             {
+              id: "gap",
+              prompt: "What is this course actually training you to do?",
+              options: [
+                { id: "a", text: "Close a gap in process performance by learning from variation" },
+                { id: "b", text: "Memorize a formula for every test JMP offers" },
+                { id: "c", text: "Replace the process with a spreadsheet average" }
+              ],
+              answer: "a",
+              why: {
+                a: "The overview is a map of problem solving. Variation is the information you use to close the gap.",
+                b: "Formulas show up later, inside a decision. They are not the point of module 0.",
+                c: "An average in a sheet is a private copy. The course keeps the measurements in a table and asks what the process is doing."
+              }
+            },
+            {
               id: "idcol",
-              prompt: "Invoice numbers are 10021, 10022, 10023. Which modeling type?",
+              prompt: "Lot numbers are 4401, 4402, 4403. Which modeling type?",
               options: [
                 { id: "a", text: "Continuous, because they are numbers" },
-                { id: "b", text: "Nominal. They are labels, not measurements." },
-                { id: "c", text: "Ordinal, because the numbers increase" }
+                { id: "b", text: "Nominal. They are labels." },
+                { id: "c", text: "Ordinal, because the numbers go up" }
               ],
               answer: "b",
               why: {
-                a: "JMP will then compute a mean invoice number. That is not a summary of anything you ship.",
-                b: "A code is a name. Store it as nominal even when the characters are digits.",
-                c: "Ordinal is for an order you mean, such as small then large. Invoice sequence is not a scale of size."
+                a: "JMP would then average lot numbers. That average is not a quantity of anything you make.",
+                b: "A code is a name, even when it is written with digits.",
+                c: "Ordinal is for an order you mean, such as small then large. A lot sequence is not a scale of size."
               }
             },
             {
               id: "dot",
-              prompt: "A Qty cell shows · . How does the mean treat it?",
+              prompt: "Yield shows a dot in one row. What is that row?",
               options: [
-                { id: "a", text: "As zero" },
-                { id: "b", text: "It is excluded. It is not a measured zero." },
-                { id: "c", text: "As the column’s maximum, so the gap is obvious" }
+                { id: "a", text: "A measured yield of zero" },
+                { id: "b", text: "Missing. It stays out of the mean." },
+                { id: "c", text: "The highest yield, flagged so you notice it" }
               ],
               answer: "b",
               why: {
-                a: "A dot is missing. Putting it in as zero pulls the mean down and pretends you measured nothing.",
-                b: "The analysis reports how many missing values it set aside. N is the count it kept.",
-                c: "JMP does not impute the maximum. If you want a fill, you choose it on purpose."
-              }
-            },
-            {
-              id: "where",
-              prompt: "Where do you set the modeling type?",
-              options: [
-                { id: "a", text: "Analyze > Distribution, after the histogram is drawn" },
-                { id: "b", text: "Column Info, or the column’s properties, before you analyze" },
-                { id: "c", text: "DOE > Custom Design" }
-              ],
-              answer: "b",
-              why: {
-                a: "Distribution uses the type you already set. Fix the column, then run it again.",
-                b: "Click the column, or Cols > Column Info, and set Modeling Type. The icon in the columns panel should match.",
-                c: "Custom Design builds an experiment. It is not where a data column’s type is stored."
+                a: "Zero would pull the mean down and pretend you measured nothing.",
+                b: "A dot was not measured. The analysis reports how many such rows it excluded.",
+                c: "JMP does not fill a missing cell with the maximum."
               }
             }
           ]
         },
         {
-          id: "dist",
-          title: "Distributions",
-          lede: "Analyze > Distribution describes one column at a time. Compare the mean with the median before you let one number stand for the column.",
+          id: "thinking",
+          title: "Module 1: Frame the problem",
+          lede: "Name the gap, map the process, list possible causes, and only then decide what to measure.",
           blocks: [
-            { t: "p", text: "This is the descriptive half of exploratory data analysis. Analyze > Distribution, and cast the columns into Y. JMP uses the modeling type. A continuous column gives a histogram, quantiles, and summary statistics: N, mean, standard deviation, and the quantiles, including the median. Turn on the outlier box plot from the red triangle next to the column: Display Options > Outlier Box Plot." },
-            { t: "p", text: "Compare the mean and the median. A mean pulled above the median, with a long right tail, is right skew. Points beyond the box plot’s whiskers are JMP’s outlier rule for that plot. They are a description, not a verdict that the row is an error. Click a histogram bar and the matching rows highlight in the table. That link is how you find which shipments the bar is." },
-            { t: "p", text: "A nominal column gives a frequency bar chart and counts, not a mean. The red triangle on the report is the local menu for that analysis." },
-            { t: "ol", items: [
-              "Analyze > Distribution.",
-              "Put Qty in Y, and OK.",
-              "Red triangle beside Qty > Display Options > Outlier Box Plot.",
-              "Click the tall bar on the right and read the highlighted rows in the table."
-            ] },
-            { t: "hist", caption: "Qty on 30 shipment lines. Most lines are small. One bar sits far to the right, and it pulls the mean (42) away from the median (18).", bins: [
-              { label: "0–10", n: 9 },
-              { label: "10–20", n: 8 },
-              { label: "20–40", n: 5 },
-              { label: "40–80", n: 3 },
-              { label: "80–200", n: 3 },
-              { label: "200+", n: 2 }
-            ] },
-            { t: "note", kind: "example", title: "How to read this picture", text: "Mean 42, median 18, one bar far to the right. The mean is not a typical line. Open the high bar, see whether it is one invoice, and decide whether it belongs. Until you decide, the median is the more honest one-number summary." }
-          ],
-          checks: [
-            {
-              id: "skew",
-              prompt: "Mean 42, median 18, and the histogram has a long right tail. What is going on?",
-              options: [
-                { id: "a", text: "A few large values are pulling the mean above a typical line" },
-                { id: "b", text: "The column is nominal, so both numbers are category codes" },
-                { id: "c", text: "The median is always larger than the mean" }
-              ],
-              answer: "a",
-              why: {
-                a: "Right skew. Look at the rows in the far bar before you quote the mean as “the” shipment size.",
-                b: "A nominal column would not offer a mean and a median of the quantity. Those are continuous summaries.",
-                c: "Here the median is smaller. That is the clue."
-              }
-            },
-            {
-              id: "counts",
-              prompt: "You want a count per warehouse, not a mean of warehouse codes. What must Warehouse be?",
-              options: [
-                { id: "a", text: "Continuous" },
-                { id: "b", text: "Nominal, so Distribution draws frequencies" },
-                { id: "c", text: "Left unset, so JMP can choose after the plot" }
-              ],
-              answer: "b",
-              why: {
-                a: "Continuous warehouse codes produce a numeric distribution of the codes. That is not a count of shipments.",
-                b: "Nominal (or ordinal, if you truly have an order) gives the frequency chart.",
-                c: "The type is already set, often by how the column was imported. Check the icon first."
-              }
-            },
-            {
-              id: "click",
-              prompt: "You click a histogram bar and rows highlight in the table. What is JMP showing?",
-              options: [
-                { id: "a", text: "The observations that fell in that bar" },
-                { id: "b", text: "Every row that is missing" },
-                { id: "c", text: "The design points of an experiment" }
-              ],
-              answer: "a",
-              why: {
-                a: "The table and the graph are linked. The highlighted rows are that bar.",
-                b: "Missing values are the dots, reported as excluded. A bar is a range of measured values.",
-                c: "Design points come from DOE. This click is just the rows behind one bin."
-              }
-            }
-          ]
-        },
-        {
-          id: "graph",
-          title: "Graph Builder",
-          lede: "Graph > Graph Builder is the picture you design by dragging. The element you pick decides whether you see points, bars, or a line.",
-          blocks: [
-            { t: "p", text: "Exploratory data analysis is not finished when one column has a histogram. Graph Builder puts columns in roles. Drop a column on X, Y, Color, Overlay, Group X, or Group Y. The element icons along the top choose points, a smoother, a line, bars, a box plot, and others. Click Done when the graph should stop responding to drags. Until then you are still designing." },
-            { t: "p", text: "A useful first graph of the shipment table: Warehouse on X (nominal), Qty on Y (continuous), element set to Bar. JMP summarizes Y for each X. Drag Customer to Overlay or Color when you need the bars split. If the picture is a cloud of points, you asked for points. Switch the element. The same two columns do not decide the geometry." },
-            { t: "p", text: "Read the axis titles. They are the columns you dropped. If Qty is summed, a warehouse with one huge invoice dominates the axis. Click or brush to see which rows. Color is a third variable. It is not decoration if it changes what you can compare." },
-            { t: "ol", items: [
-              "Graph > Graph Builder.",
-              "Drag Warehouse to X and Qty to Y.",
-              "Click the bar element.",
-              "Drag Customer to Overlay.",
-              "Click Done."
-            ] }
-          ],
-          checks: [
-            {
-              id: "bars",
-              prompt: "You see one bar per warehouse. Which element is active?",
-              options: [
-                { id: "a", text: "Bar, with a nominal X and a continuous Y" },
-                { id: "b", text: "A fitted line from Fit Y by X" },
-                { id: "c", text: "A histogram of a single continuous column" }
-              ],
-              answer: "a",
-              why: {
-                a: "That is Graph Builder’s bar element summarizing Qty by Warehouse.",
-                b: "A fitted line is a regression plot, one cloud and a line, not one bar per warehouse.",
-                c: "A histogram is Distribution, bins of one column, not a bar per category."
-              }
-            },
-            {
-              id: "points",
-              prompt: "You wanted each shipment as a point, and you see a single bar per warehouse. What do you change?",
-              options: [
-                { id: "a", text: "The element, from bar to points" },
-                { id: "b", text: "The modeling type of Qty to nominal" },
-                { id: "c", text: "File > Open, because the table is the wrong shape" }
-              ],
-              answer: "a",
-              why: {
-                a: "The columns can stay. The element is what drew the bars. Switch it, and don’t click Done until the picture is the one you meant.",
-                b: "Making Qty nominal would throw away the measurement. You would get counts of quantity-codes.",
-                c: "The table is fine. The graph element is the choice."
-              }
-            },
-            {
-              id: "done",
-              prompt: "Why click Done?",
-              options: [
-                { id: "a", text: "It runs a hypothesis test on the bars" },
-                { id: "b", text: "It finishes the graph so later drags do not rebuild it" },
-                { id: "c", text: "It sets every column to continuous" }
-              ],
-              answer: "b",
-              why: {
-                a: "Graph Builder draws. Tests are Analyze > Fit Y by X or Distribution.",
-                b: "Until Done, you are still in the design surface.",
-                c: "Done does not touch modeling types. Those stay on the columns."
-              }
-            }
-          ]
-        },
-        {
-          id: "tests",
-          title: "Intervals and tests",
-          lede: "You rarely pick “t test” from a menu. You put a continuous Y and a grouping X in Fit Y by X, and you read the difference as well as the p-value.",
-          blocks: [
-            { t: "p", text: "Decision making with data starts from a question: is this mean where we think it is, or do these groups differ by enough to matter? A confidence interval is the range of values still compatible with the data at the stated confidence. A p-value is the probability of a result at least this far from the null — no difference, or no shift — if that null were true. A small p is evidence against the null. It is not the probability that the null is true, and it is not the size of the effect. Read the difference in means beside it." },
-            { t: "p", text: "Sample size and power travel together. A tiny study can miss a difference you would care about. A huge study can declare a trivial difference “significant.” The public JMP path treats sample size as part of the decision, not as an afterthought. JMP’s DOE and sample-size tools ask for the difference you care about and then tell you how many runs that implies. This lesson does not compute a sample size. It asks you not to quote a p-value without the size of the effect." },
-            { t: "h", text: "Which platform" },
+            { t: "p", text: "A problem, in this course, is a failure to meet a level of performance you need. There is a gap. Easy problems have a known cause and a known fix. Hard ones do not. The module walks the same four groups of work either way: define the gap, understand the process, find likely causes, then act and hold the gain." },
+            { t: "h", text: "Say the problem so a team can use it" },
+            { t: "p", text: "Write what is wrong, where, and how far from the goal. Low yield on black anodize is a gap. An unhappy meeting is not. Put a goal next to it, and a measure that tells you whether you moved. That measure is a key indicator: one number the team agrees to watch." },
+            { t: "h", text: "Map the process before you blame a step" },
+            { t: "p", text: "A process takes inputs, adds work, and hands an output to a customer. A SIPOC is the wide view: suppliers, inputs, the process in a few steps, outputs, customers. An input-output map is tighter. It shows which inputs feed which steps. Use a flowchart when the path branches or the same work is done by more than one role. The map is a picture of how the work actually happens, not the poster in the hallway." },
+            { t: "h", text: "Causes are a list, not a verdict" },
             { t: "ul", items: [
-              "**One sample.** Analyze > Distribution on a continuous column, red triangle > Test Mean, and type the mean you are comparing with. Read the test and the confidence interval for the mean.",
-              "**Two samples.** Analyze > Fit Y by X. Y continuous, X nominal with two levels. JMP offers the two-group t test.",
-              "**Paired.** Each unit was measured twice. Stack the two measurements so the difference is the continuous column, and test that difference against zero. Or give Fit Y by X a matched-pairs role when you have arranged the two columns that way. Do not run a two-sample test on paired data. The pairing is the point.",
-              "**More than two groups** is the next lesson: one-way ANOVA."
+              "**Brainstorm**, then **multi-vote** to shorten the list, or an **affinity** diagram to group the ideas.",
+              "A **cause-and-effect diagram** puts the problem at the head and branches the causes. Asking why, about five times, walks down one branch.",
+              "A **cause-and-effect matrix** scores those causes against more than one effect, when yield is not the only thing that matters."
             ] },
-            { t: "ol", items: [
-              "Confirm modeling types. Scrap continuous, Machine nominal.",
-              "Analyze > Fit Y by X.",
-              "Y = Scrap, X = Machine, OK.",
-              "Read the two means, the difference, the interval, and the p-value."
+            { t: "p", text: "None of these tools prove a cause. They stop the team from testing the first idea that was loudest." },
+            { t: "h", text: "Define the measurement before you collect it" },
+            { t: "p", text: "Continuous, nominal, and ordinal data do not answer the same question. An operational definition says how the number is taken: which gauge, which spot on the part, what counts as a defect. Then choose a collection plan that matches the decision. When the sheet exists, import it into a JMP table and set the modeling types before any platform." },
+            { t: "note", kind: "example", title: "A yield gap", text: "White polymer yield is under the goal. The problem statement names the product, the line, and the gap. A SIPOC shows resin, the reactor, and the customer who receives the lot. The fishbone lists temperature, feed rate, and the assay. You do not change the reactor yet. You define how yield is calculated, then you collect." }
+          ],
+          checks: [
+            {
+              id: "problem",
+              prompt: "Which of these is a problem statement this module would accept?",
+              options: [
+                { id: "a", text: "Black anodize yield is 82 percent, and the goal is 95 percent" },
+                { id: "b", text: "The process should be better" },
+                { id: "c", text: "We think the acid bath is the cause" }
+              ],
+              answer: "a",
+              why: {
+                a: "It names the gap between current performance and the level you need.",
+                b: "Better is not a level. The team cannot tell when the gap has closed.",
+                c: "A suspected cause comes after the gap is defined. It is not the problem statement."
+              }
+            },
+            {
+              id: "sipoc",
+              prompt: "What is a SIPOC for?",
+              options: [
+                { id: "a", text: "A wide map of suppliers, inputs, steps, outputs, and customers" },
+                { id: "b", text: "A proof of the root cause" },
+                { id: "c", text: "A control chart of the last twenty lots" }
+              ],
+              answer: "a",
+              why: {
+                a: "SIPOC is the wide process picture, before you draw a tighter input-output map.",
+                b: "A map does not test a cause. It shows where a cause could sit.",
+                c: "Control charts are a later module. They need data you have not defined yet."
+              }
+            },
+            {
+              id: "fish",
+              prompt: "You finish a fishbone and five whys. What do you have?",
+              options: [
+                { id: "a", text: "A ranked list of possible causes, still untested" },
+                { id: "b", text: "The root cause, ready to change on the line" },
+                { id: "c", text: "A confidence interval for the yield" }
+              ],
+              answer: "a",
+              why: {
+                a: "These are tools for generating and sorting ideas. Data still has to test them.",
+                b: "Changing the line on a diagram alone is how you fix the wrong thing.",
+                c: "An interval needs measurements. This step has not collected them."
+              }
+            }
+          ]
+        },
+        {
+          id: "explore",
+          title: "Module 2: Look before you test",
+          lede: "Describe each column, picture relationships, and clean the table before a p-value means anything.",
+          blocks: [
+            { t: "p", text: "Exploratory data analysis is numerical summaries and pictures, used to learn what the sample actually looks like. You are not confirming a theory yet. You are seeing shape, center, spread, odd points, and which columns move together." },
+            { t: "h", text: "One continuous column" },
+            { t: "p", text: "Analyze, then Distribution. Put the measurement in Y. A histogram shows shape. A box plot shows the median, the middle half, and points that sit far out. Mean and median describe the center. The range and the interquartile range describe spread without squaring anything. Variance and standard deviation describe spread around the mean." },
+            { t: "p", text: "Columns Viewer and Tabulate summarize many continuous columns, or a continuous column split by a category such as reactor. Hide and exclude are different: hide removes a point from a graph, exclude removes it from the calculations. Do both when a point is a typing error. Do neither just because the point is inconvenient." },
+            { t: "h", text: "More than one column" },
+            { t: "ul", items: [
+              "**Graph Builder**, the first item under Graph, draws a scatterplot, a run chart, or side-by-side boxes. Drag a column to a zone.",
+              "**Fit Y by X** and a **scatterplot matrix** show several pairs at once.",
+              "Categories use counts and percents, then a bar chart or a mosaic plot. A Pareto plot sorts the bars so the largest problems are on the left.",
+              "Many levels: a packed bar chart, a tree map, or a local data filter. Several groups at once: a trellis, an overlay, a bubble plot, or a heat map. Places: a map from names or from coordinates."
             ] },
-            { t: "outline", title: "Oneway Analysis of Scrap By Machine", rows: [
-              { text: "Means", head: true },
-              { text: "Machine A — 2.1", indent: true },
-              { text: "Machine B — 3.4", indent: true },
-              { text: "Difference — 1.3", indent: true },
-              { text: "t Test", head: true },
-              { text: "p-value — 0.03", indent: true },
-              { text: "The confidence interval for the difference excludes 0", indent: true }
+            { t: "h", text: "Shape, and then the audience" },
+            { t: "p", text: "A normal quantile plot is a check, not a pass-fail stamp. Points along a straight line look roughly normal. A curve means a tail. The central limit theorem is why averages from even a skewed process can look normal if each average is of enough rows. That is about the average, not about every individual measurement." },
+            { t: "p", text: "A graph for yourself can be dense. A graph for someone else answers one practical question and leaves out ink that does not serve it. Customize titles and axes in Graph Builder. Save the steps as a script on the table so you can rerun them. A journal holds the story. People without JMP get a static image, not your live table." },
+            { t: "h", text: "The table has to be honest first" },
+            { t: "p", text: "Scan for missing cells, impossible values, and names that are the same supplier spelled three ways. Columns Viewer counts missing values. Recode fixes the names, or bins a continuous column on purpose. Most platforms want one row per observation. Stack splits a wide sheet into that shape. Concatenate stacks tables with the same columns. Join matches tables on a shared key, such as an order number." },
+            { t: "note", kind: "example", title: "Impurity across reactors", text: "Distribution on impurity shows a right tail. Side-by-side boxes by reactor, in Graph Builder, show one reactor sitting higher. You do not run a test yet. You exclude a row whose temperature was typed as 500, save the Distribution script on the table, and write down what the picture suggested." }
+          ],
+          checks: [
+            {
+              id: "dist",
+              prompt: "You want a histogram and a box plot of impurity. Where do you start?",
+              options: [
+                { id: "a", text: "Analyze, then Distribution, with impurity in Y" },
+                { id: "b", text: "DOE, then Custom Design" },
+                { id: "c", text: "A cause-and-effect diagram" }
+              ],
+              answer: "a",
+              why: {
+                a: "Distribution is the platform the demos use for a histogram, a box plot, and the summaries.",
+                b: "Custom Design builds an experiment. It does not describe a column you already have.",
+                c: "A fishbone lists ideas. It does not read the table."
+              }
+            },
+            {
+              id: "hide",
+              prompt: "You hide a point but do not exclude it. What changes?",
+              options: [
+                { id: "a", text: "The graph. The mean still uses the point." },
+                { id: "b", text: "The mean. The graph still shows the point." },
+                { id: "c", text: "Both the graph and every calculation" }
+              ],
+              answer: "a",
+              why: {
+                a: "Hide is visual. Exclude is what takes the row out of the statistics. Use both only when you mean both.",
+                b: "That is the opposite of the two commands.",
+                c: "Hiding alone does not drop the row from the mean."
+              }
+            },
+            {
+              id: "stack",
+              prompt: "Five particle measurements sit in five columns, and you need one column of particle size. What do you do?",
+              options: [
+                { id: "a", text: "Stack the columns so each measurement is a row" },
+                { id: "b", text: "Average the five columns and delete the rest" },
+                { id: "c", text: "Mark the size column as nominal" }
+              ],
+              answer: "a",
+              why: {
+                a: "Most analyses want the observation in the row and the variable in the column. Stack builds that grid.",
+                b: "Averaging throws away the five readings the analysis was going to use.",
+                c: "The modeling type is a separate decision, and size is continuous."
+              }
+            }
+          ]
+        },
+        {
+          id: "quality",
+          title: "Module 3: Signal, noise, and the gauge",
+          lede: "A control chart asks whether the process changed. Capability asks whether it meets the customer. The gauge asks whether you can trust the number.",
+          blocks: [
+            { t: "p", text: "Common-cause variation is the ordinary wander of a stable process. Special-cause variation is a change: a new lot, a broken fixture, a shift that does something different. A control chart separates the two. You investigate a signal. You do not retune the process for every wiggle inside the limits." },
+            { t: "h", text: "Control Chart Builder" },
+            { t: "p", text: "One measurement at a time uses an individual and moving-range chart. Rational subgroups, such as five consecutive parts, use an X-bar chart with an R or an S chart. A 3-way chart splits within-sample, between-sample, and over-time variation when the subgroup is not a simple snapshot. Phases draw a break when you change the process, so the limits after the change are not computed from the crisis before it." },
+            { t: "p", text: "Tests for special causes flag a point outside the limits and patterns such as a long run on one side of the center. A flag is a question. It is not, by itself, the cause." },
+            { t: "h", text: "Capability is a different question" },
+            { t: "p", text: "The voice of the customer is the specification limits. Capability indices compare the process spread, and where the process is centered, with those limits. Compute them on a stable process. Short-term and long-term estimates answer different windows of time. A nonnormal measurement needs a method that does not pretend the histogram is a bell. When many characteristics matter, look for the ones that fail first instead of celebrating the ones that pass." },
+            { t: "p", text: "The demos calculate indices from Distribution, and a capability analysis with a phase from Control Chart Builder. Read the picture of the fit before you quote a single index." },
+            { t: "h", text: "If the gauge is noisy, the process chart is lying" },
+            { t: "p", text: "A measurement systems study asks how much of the variation is the instrument and the operator, not the part. Plan the study: parts, operators, repeats. The demo builds the worksheet as a gauge study. Then look: variability charts first, then an EMP analysis or a Gauge R&R. Bias is a separate question from spread. If the gauge eats the tolerance, improve the measurement before you chase the process." },
+            { t: "note", kind: "caution", title: "Stable, then capable", text: "A high capability index on a chart full of special causes is a number from a process that is not one process. Hold the chart steady, then talk about the specification." }
+          ],
+          checks: [
+            {
+              id: "signal",
+              prompt: "A point falls outside the control limits on an individual chart. What does that mean?",
+              options: [
+                { id: "a", text: "Evidence of a special cause, worth investigating" },
+                { id: "b", text: "The process has failed the customer specification" },
+                { id: "c", text: "You should recalculate the limits without that point and move on" }
+              ],
+              answer: "a",
+              why: {
+                a: "Control limits describe the process's own voice. A point outside them is a signal, not a specification.",
+                b: "Specification limits are the customer's voice. They are the capability question.",
+                c: "Dropping the point hides the signal. Find out what changed."
+              }
+            },
+            {
+              id: "phase",
+              prompt: "You changed the feed rate last Tuesday and want to know if the improvement held. What do you add?",
+              options: [
+                { id: "a", text: "A phase so limits after the change are not mixed with the old process" },
+                { id: "b", text: "A fishbone of the old complaints" },
+                { id: "c", text: "A mean of all weeks together" }
+              ],
+              answer: "a",
+              why: {
+                a: "Phases split the chart at the change. One set of limits would blur the before and the after.",
+                b: "A fishbone does not show whether the new feed rate held.",
+                c: "One mean across the change answers a question you are no longer asking."
+              }
+            },
+            {
+              id: "msa",
+              prompt: "Operators measuring the same parts disagree by more than the tolerance. What do you do first?",
+              options: [
+                { id: "a", text: "Study and improve the measurement system" },
+                { id: "b", text: "Tighten the process specification" },
+                { id: "c", text: "Run a larger design of experiments on the line" }
+              ],
+              answer: "a",
+              why: {
+                a: "If the gauge uses up the tolerance, process experiments will chase measurement noise.",
+                b: "A tighter spec does not make a noisy gauge honest.",
+                c: "An experiment on the line cannot see a factor smaller than the measurement error."
+              }
+            }
+          ]
+        },
+        {
+          id: "decide",
+          title: "Module 4: Intervals, tests, and how many runs",
+          lede: "An interval says where a quantity might lie. A test says how surprising the data are if nothing changed. Power says whether you collected enough to see a change you care about.",
+          blocks: [
+            { t: "p", text: "You have one sample from a larger process. Inference is what you may say about that process, with the uncertainty written down. The module builds three kinds of interval, then the logic of a test, then the tests you actually run, then the sample size you should have chosen first." },
+            { t: "h", text: "Three intervals, three questions" },
+            { t: "ul", items: [
+              "A **confidence interval** is a range for a population mean, at a stated confidence. A 95 percent interval is built so that the method catches the mean in 95 percent of samples. It is not a 95 percent chance attached after the fact to this one interval.",
+              "A **prediction interval** is wider. It is for one future observation, which has the process wander plus the uncertainty in the mean.",
+              "A **tolerance interval** aims to cover a stated proportion of the population."
             ] },
-            { t: "note", kind: "example", title: "How to read that report", text: "There is evidence the machines differ: the interval for the difference excludes 0, and the p-value is 0.03. Whether 1.3 points of scrap is worth a maintenance stop is the process decision. The p-value does not make it. If Machine had been left continuous, Fit Y by X would fit a line through machine numbers instead of comparing groups." }
+            { t: "p", text: "In the demos, Analyze, then Distribution, puts the measurement in Y. The interval red triangle is where the confidence, prediction, and tolerance intervals are requested. Alpha is the risk you accept of missing the target. A higher confidence makes a wider interval." },
+            { t: "h", text: "A test is a comparison with a stated claim" },
+            { t: "p", text: "The null is the claim of no difference, or of a mean equal to a target. The alternative is the departure you are willing to detect. The p-value is how unusual the sample would be if the null were true. A small p-value is evidence against the null. It is not the probability that the null is true, and it is not the size of the effect." },
+            { t: "p", text: "One sample against a target: Distribution, then Test Mean. Two groups: Analyze, then Fit Y by X, response in Y and the group in X. Paired data, such as before and after on the same part, is a one-sample test on the differences, not a two-sample test that forgets the pairing. More than two groups: one-way ANOVA in the same Fit Y by X path, then a multiple comparison so you do not declare every pair different just because the overall test moved. An equivalence test asks whether the difference is small enough to ignore, which is a different question from whether it is zero." },
+            { t: "h", text: "Practical size, and the sample you need" },
+            { t: "p", text: "A tiny shift can be statistically significant in a huge sample and still not matter on the line. State the difference you would act on. Sample size for a confidence interval depends on how narrow you need the interval. Power is the chance you detect that difference when it is real. The demos use JMP's sample-size calculations for a mean, a proportion, a one-sample t test, and two or more means. Do this before you collect, not after a disappointing p-value." },
+            { t: "note", kind: "example", title: "Diameter against a target", text: "Distribution on diameter, then a confidence interval, says where the process mean might sit. Test Mean against the target says whether the data look odd if the mean really is the target. A second material is a Fit Y by X of strength by material. You still look at how large the difference is, not only at the p-value." }
           ],
           checks: [
             {
               id: "which",
-              prompt: "Y is continuous. X is nominal with 2 machines. Which analysis does Fit Y by X give you?",
+              prompt: "You want a range for one future part's diameter, not for the mean. Which interval?",
               options: [
-                { id: "a", text: "A two-group t test" },
-                { id: "b", text: "A chi-square test of two nominal columns" },
-                { id: "c", text: "A designed experiment" }
+                { id: "a", text: "A prediction interval" },
+                { id: "b", text: "A confidence interval for the mean" },
+                { id: "c", text: "The control limits from last month's chart" }
               ],
               answer: "a",
               why: {
-                a: "Continuous Y and a two-level nominal X is the two-sample t test. Three or more levels become a one-way ANOVA.",
-                b: "Chi-square is two nominal columns. Here Y is a measurement.",
-                c: "An experiment is DOE > Custom Design, before the data exist. This table is already measured."
+                a: "A prediction interval allows for a new individual, so it is wider than the interval for the mean.",
+                b: "The confidence interval is about the mean. A single future part varies more than the mean does.",
+                c: "Control limits describe past stability. They are not a prediction interval for the next part."
               }
             },
             {
-              id: "pval",
-              prompt: "The p-value is 0.03. Which sentence is fair?",
+              id: "pvalue",
+              prompt: "A two-sample test returns a p-value of 0.03. What may you say?",
               options: [
-                { id: "a", text: "There is a 3 percent chance the machines are the same." },
-                { id: "b", text: "Results at least this far apart would be unusual if the machines had the same mean." },
-                { id: "c", text: "Machine B is 3 percent worse than Machine A." }
+                { id: "a", text: "If the two means were equal, data like these would be uncommon" },
+                { id: "b", text: "There is a 3 percent chance the means are equal" },
+                { id: "c", text: "The difference is large enough to matter on the line" }
               ],
-              answer: "b",
+              answer: "a",
               why: {
-                a: "The p-value is not the probability that the null is true.",
-                b: "That is the null-based reading. Then look at the 1.3 difference and ask whether it matters.",
-                c: "1.3 is the difference in means. 0.03 is not a percent change."
+                a: "That is what a p-value is: surprise, assuming the null.",
+                b: "The p-value is not the probability that the null is true.",
+                c: "Practical size is a separate look at the difference, not a gift from 0.03."
               }
             },
             {
-              id: "paired",
-              prompt: "Each batch was measured before and after a change. Which test respects the pairing?",
+              id: "pair",
+              prompt: "You measure the same ten parts before and after a wash. Which test respects that?",
               options: [
-                { id: "a", text: "A two-sample t test that ignores which before goes with which after" },
-                { id: "b", text: "A test of the paired differences against zero" },
-                { id: "c", text: "Distribution of the invoice numbers" }
+                { id: "a", text: "A paired test on the ten differences" },
+                { id: "b", text: "A two-sample test that treats the twenty readings as unrelated" },
+                { id: "c", text: "A control chart of the part numbers" }
               ],
-              answer: "b",
+              answer: "a",
               why: {
-                a: "Unpaired, the batch-to-batch noise swamps the change you actually made.",
-                b: "The difference on each batch is the observation. Test that mean against zero.",
-                c: "Invoice numbers are labels. They are not the before-and-after measurement."
+                a: "The pairing is the information. The test belongs on the differences.",
+                b: "Ignoring the pair inflates the noise and can hide a real shift.",
+                c: "Part numbers are labels. A chart of the labels is not the before-and-after question."
               }
             }
           ]
         },
         {
-          id: "models",
-          title: "ANOVA, a line, and whether the fit is trustworthy",
-          lede: "Fit Y by X compares groups and fits one line. When the scatter bends, or more than one X matters, you look harder before you believe the slope.",
+          id: "regression",
+          title: "Module 5: Relationships and models",
+          lede: "Correlation describes a straight association. Regression uses one or more columns to explain or predict another, and then you check whether the model deserves that job.",
           blocks: [
-            { t: "p", text: "Continuous Y and a nominal X with three or more levels is a one-way ANOVA, still in Analyze > Fit Y by X. You get a mean per group and a test that the means differ. Two levels was the t test. The platform did not change. The number of levels did. An N-way analysis, two grouping columns at once, is Analyze > Fit Model, with both nominal columns in the model. Fit Model is also where a continuous covariate joins a group: that is covariance analysis, a group comparison adjusted for a measurement such as batch size. Put the group and the covariate in the model and read whether the group effect remains after the covariate is accounted for." },
-            { t: "p", text: "Two continuous columns start as a scatterplot. Graph Builder, or Fit Y by X with both columns continuous, shows the cloud. Correlation is the straight-line association, between −1 and 1, and it misses a curve. If the cloud bends, a polynomial term — the column and its square — can follow the bend. A straight line through a curve will look “significant” and still be the wrong shape." },
-            { t: "p", text: "More than one predictor is Analyze > Fit Model. After the fit, look at residuals: the vertical gaps between the points and the fit. A pattern left in the residuals means the line was too simple. One point with a huge residual, or a point far out on X that swings the slope, is influential. Decide whether it is a real batch or a bad row. Do not delete it to improve the p-value. Collinearity means two predictors move together, so the fit cannot tell their slopes apart. The coefficients get unstable. That is a reason to drop or combine a predictor, not a reason to quote both slopes to three decimals." },
-            { t: "ol", items: [
-              "Confirm Y is continuous and the grouping column is nominal.",
-              "Analyze > Fit Y by X. Y in Y, the group in X, OK.",
-              "For a line: both columns continuous. Read the slope, the interval, and the scatter, not only the p-value.",
-              "Red triangle options for residual plots when you are in Fit Model with more than one X."
-            ] },
-            { t: "note", kind: "example", title: "A bend and a point", text: "Yield against temperature rises, then flattens. A straight line’s p-value is small because the left side is lower than the right side, and the line still misses the flatten. Add the square of temperature, or simply refuse the straight summary. Separately, one run at an extreme temperature and a wild yield swings the slope. The residual plot shows it. Check the lab book before you drop the row." }
+            { t: "p", text: "A scatterplot comes first. Correlation is a single number for a linear association between two continuous columns. It does not notice a curve, and one odd point can inflate or erase it. The demos look at the scatter in Graph Builder, then at Fit Y by X and Multivariate. Look at the plot before you quote the number." },
+            { t: "h", text: "A straight line" },
+            { t: "p", text: "Simple linear regression draws a line so the squared vertical gaps are as small as possible. That is least squares. Fit it from Graph Builder or from Analyze, then Fit Y by X, with the response in Y and the factor in X. The slope is the change in the response for a one-unit change in the factor, inside the range you observed. It is not a license to extrapolate off the edge of the data." },
+            { t: "p", text: "The line assumes a straight relationship, similar scatter along the line, and residuals that are not a pattern. Residual plots and a case like Anscombe's quartet are the warning: four pictures can share a line and a correlation and tell four different stories. A curve calls for a polynomial term, fit in Fit Y by X, and you stop adding powers when the picture stops improving." },
+            { t: "h", text: "More than one factor" },
+            { t: "p", text: "Multiple regression puts several factors in one model. Analyze, then Fit Model. Read the coefficients only after you know what else is in the model. The prediction profiler shows the response as you move one factor and hold the others. Residual plots, and measures of influence, flag points that are pulling the fit. A categorical factor enters as a comparison of levels, not as a fake continuous number. An interaction means the effect of one factor depends on another." },
+            { t: "p", text: "Effect Summary is the demo's way to drop terms that are not earning their place. Multicollinearity means factors are standing in for each other, so the individual coefficients get unstable even when the model as a whole still predicts. If two factors move together, do not narrate them as two separate levers." },
+            { t: "h", text: "When the response is yes or no" },
+            { t: "p", text: "Logistic regression is for a two-level outcome, such as fail or pass. The model talks about the log odds, and the profiler turns that back into a probability. Fit Model again, with the nominal response in Y. Interactions and several factors work the same way as in a linear model. Common failures: complete separation, where a factor predicts the outcome perfectly and the estimates blow up, and a cutoff for classifying pass or fail that you chose without looking at the costs of each mistake." },
+            { t: "note", kind: "caution", title: "Explain is not the same as cause", text: "A fitted line on historical data shows association. It does not prove that changing the factor on the line will move the response. That claim wants an experiment, which is the next module." }
           ],
           checks: [
             {
-              id: "anova",
-              prompt: "Y is continuous. X is nominal with 4 suppliers. What do you get from Fit Y by X?",
+              id: "corr",
+              prompt: "Correlation is 0.9, and the scatterplot is a clear curve. What do you trust?",
               options: [
-                { id: "a", text: "A one-way ANOVA" },
-                { id: "b", text: "A paired t test" },
-                { id: "c", text: "A chi-square test" }
+                { id: "a", text: "The plot. The correlation only scores a straight line." },
+                { id: "b", text: "The 0.9. A curve this strong must be linear." },
+                { id: "c", text: "Neither, until you delete the middle of the data" }
               ],
               answer: "a",
               why: {
-                a: "More than two levels of a nominal X, with a continuous Y, is one-way ANOVA. Two levels would have been a t test.",
-                b: "Paired needs two measurements on the same unit. Four suppliers are four groups.",
-                c: "Chi-square needs a nominal Y as well. Yield is continuous."
+                a: "Correlation misses curvature. The scatterplot is the check.",
+                b: "A high correlation can sit on a curve or on one odd point.",
+                c: "Deleting the middle to force a line is not an analysis."
               }
             },
             {
-              id: "bend",
-              prompt: "The scatter of yield against temperature rises and then flattens. A straight line has a small p-value. What is the fair reading?",
+              id: "slope",
+              prompt: "Removal increases by 1.2 units for each unit of outside diameter, inside the observed range. What is that number?",
               options: [
-                { id: "a", text: "The straight line is confirmed, because the p-value is small" },
-                { id: "b", text: "The line is the wrong shape. Look at a curve, or don’t summarize with one slope." },
-                { id: "c", text: "Change temperature to nominal so the p-value goes away" }
-              ],
-              answer: "b",
-              why: {
-                a: "A small p-value says a straight association is unlikely to be noise. It does not say the straight shape is right. The picture shows a bend.",
-                b: "Polynomial regression, or a smoother in Graph Builder, follows the flatten. Then read the curve.",
-                c: "Temperature is a measurement. Hiding it in categories throws away the shape you can see."
-              }
-            },
-            {
-              id: "coli",
-              prompt: "Two predictors always rise together, and both slopes jump around when you drop a few rows. What is that called?",
-              options: [
-                { id: "a", text: "Collinearity. The fit cannot separate their effects." },
-                { id: "b", text: "A paired t test" },
-                { id: "c", text: "A missing-value dot" }
+                { id: "a", text: "The slope of the fitted line, not a promise outside the data" },
+                { id: "b", text: "The correlation" },
+                { id: "c", text: "The p-value" }
               ],
               answer: "a",
               why: {
-                a: "That is collinearity. Combine or drop one predictor rather than quoting both unstable slopes.",
-                b: "A paired t test is two measurements on one unit. This is a regression with two tangled X columns.",
-                c: "A dot is a missing cell. It does not make two slopes trade off."
+                a: "The slope is the change in Y per unit of X, where you actually have data.",
+                b: "Correlation has no units of removal per unit of diameter.",
+                c: "The p-value does not say how large the change is."
+              }
+            },
+            {
+              id: "logit",
+              prompt: "The outcome is pass or fail. Which model is built for that?",
+              options: [
+                { id: "a", text: "Logistic regression, with the outcome as a nominal response" },
+                { id: "b", text: "A straight-line regression that scores pass as 1 and fail as 0 and treats it as continuous" },
+                { id: "c", text: "A correlation between the outcome and a factor" }
+              ],
+              answer: "a",
+              why: {
+                a: "Logistic regression models the probability of a two-level outcome.",
+                b: "Coding pass and fail as numbers and fitting a line can predict probabilities outside 0 and 1.",
+                c: "Correlation wants two continuous columns. An outcome with two names is not one of them."
               }
             }
           ]
         },
         {
           id: "doe",
-          title: "A first experiment",
-          lede: "Changing one factor at a time cannot see an interaction. A designed experiment changes the factors together, in a table JMP builds before you run anything.",
+          title: "Module 6: Design the experiment",
+          lede: "Change factors on purpose, together, so you can see effects, curvature, and interactions that one-factor tinkering hides.",
           blocks: [
-            { t: "p", text: "A factor is something you set, such as temperature, pressure, or supplier. A response is what you measure, such as yield. A run is one combination you actually execute. An interaction is a factor whose effect depends on another factor: a temperature that only matters at one pressure. One-factor-at-a-time experiments miss that, and they spend runs on a weaker estimate." },
-            { t: "p", text: "JMP’s doorway is DOE > Custom Design. You name the response and a goal (maximize, match a target, or minimize), you add factors with their lows and highs or their categories, you accept or set the number of runs, and you make a table. Each row is one run. Factor columns are filled with the settings. The response column is empty until you execute the run and type what you measured. Run the rows you were given. Randomize the execution order when the design says so. Do not sort the table into a tidy temperature order and then forget that the order was part of the protection against drift." },
-            { t: "ol", items: [
-              "DOE > Custom Design.",
-              "Add the response and set the goal.",
-              "Add factors. Continuous factors get a low and a high. Categorical factors get levels.",
-              "Continue. Set or accept the number of runs.",
-              "Make Design, then Make Table.",
-              "After the response is filled in: Analyze > Fit Model. The model is usually prepared from the design."
+            { t: "p", text: "An ad hoc change, or one factor at a time, confuses the factor with whatever else drifted that day, and it cannot see an interaction. A designed experiment changes the factors together in a planned table, then fits the results with Fit Model." },
+            { t: "h", text: "Words you need before you click" },
+            { t: "ul", items: [
+              "A **factor** is something you set. A **response** is what you measure.",
+              "A **level** is a setting, often a low and a high.",
+              "A **run** is one combination you actually execute.",
+              "An **effect** is the change in the response tied to a factor. An **interaction** means that change depends on another factor."
             ] },
-            { t: "p", text: "Effect Summary lists factors by evidence. A larger LogWorth, and a smaller p-value, means stronger evidence that the factor’s effect is not just noise. A LogWorth around 2 is the neighborhood of a p-value of 0.01. The Prediction Profiler shows the predicted response as you drag a factor. A steep trace is a strong effect inside the range you tried. A flat trace is a factor that, in that range, did little. If two factors interact, the trace of one changes when you move the other." },
-            { t: "outline", title: "Effect Summary, after the response is filled in", rows: [
-              { text: "Temperature — LogWorth well above 2", head: true },
-              { text: "Pressure — p-value 0.62", head: true },
-              { text: "Supplier — weakest of the three", head: true }
-            ] },
-            { t: "note", kind: "example", title: "How to read it", text: "The profiler: yield rises as you drag temperature from its low to its high, and it barely moves when you drag supplier. Pressure’s trace is flat. Next, spend samples on temperature, not on switching supplier, unless a later interaction says supplier changes the temperature slope. A flat trace is not proof that pressure never matters outside the range you tested." },
-            { t: "p", text: "This is the doorway the public JMP path opens: language, a design table, Effect Summary, and the profiler. It is not a full design course. Power, response-surface optimization, and split plots start from the same place, a design table and Fit Model. Quality methods — control charts, capability, measurement systems — and predictive modeling are the other public modules, and they are outside this short course." }
+            { t: "h", text: "Which design" },
+            { t: "p", text: "A full factorial runs every combination. DOE, then Classical, then Full Factorial Design. With replication you can estimate noise and test effects. Without replication you use a normal plot of the effects and accept that you cannot separate every small effect from noise. Fractional factorials run a designed fraction when the factor list is long: DOE, then Classical, then Two-Level Screening, then Screening Design. You give up some interactions to save runs. A custom screening design from the Custom Designer is the same idea when the classical table does not fit your constraints." },
+            { t: "p", text: "A response surface looks for curvature and a better setting, not only for which factors matter. For a classical central composite, the demo uses DOE, then Classical, then Response Surface Design. The Custom Designer builds the same kind of table when the region is awkward. Sequential work is the usual order: screen, then a surface on the factors that survived, then confirm." },
+            { t: "h", text: "Plan the study before the table" },
+            { t: "p", text: "Write the objective. Name the responses and how you will measure them. Name the factors and the levels you can actually set. Write the restrictions: hard-to-change factors, mixtures, runs you cannot afford. Randomize the run order unless a restriction forbids it. The anodize case in this module is that planning, done twice: once to choose the design, again to read it." },
+            { t: "p", text: "After the runs, Analyze, then Fit Model. The prediction profiler, including a desirability function when several responses matter, shows a compromise setting. Simulating from the profiler is a way to see uncertainty before you commit the line. Then run a confirmation. The model is a map of the region you tested, not of the whole plant." },
+            { t: "note", kind: "screen", title: "Analyze what you designed", text: "Full factorial and screening tables are built to be read in Fit Model, with the model the design intended. Do not drop factors because a one-at-a-time plot looked flat, and then pretend the design was smaller." }
           ],
           checks: [
             {
-              id: "row",
-              prompt: "What is a row in the design table before the experiment?",
+              id: "ofat",
+              prompt: "Why is one factor at a time a weak way to improve a process?",
               options: [
-                { id: "a", text: "One planned run: factor settings filled in, response still empty" },
-                { id: "b", text: "A fitted slope" },
-                { id: "c", text: "A journal entry" }
+                { id: "a", text: "It misses interactions and confuses a factor with whatever else changed that day" },
+                { id: "b", text: "JMP cannot plot the results" },
+                { id: "c", text: "It uses too many runs" }
               ],
               answer: "a",
               why: {
-                a: "You execute that row and then type the response you measured. The settings were the instruction.",
-                b: "Slopes appear after Fit Model, once the response column is filled in.",
-                c: "Journal entries are Priority. A JMP design table is a plan of runs."
+                a: "Factors that change together can do something neither does alone. One-at-a-time never sees that, and the day itself is a hidden factor.",
+                b: "Graph Builder can plot anything. The weakness is the design, not the picture.",
+                c: "One-at-a-time often uses fewer runs and learns less per run. The issue is not the count."
               }
             },
             {
-              id: "menu",
-              prompt: "Where do you start?",
+              id: "screen",
+              prompt: "You have eight factors and budget for a fraction of the full factorial. Where do you start?",
               options: [
-                { id: "a", text: "Analyze > Distribution" },
-                { id: "b", text: "DOE > Custom Design" },
-                { id: "c", text: "Graph > Graph Builder, and click Done" }
-              ],
-              answer: "b",
-              why: {
-                a: "Distribution describes a column you already have. The design table does not exist yet.",
-                b: "Custom Design is the path: response, factors, runs, Make Table.",
-                c: "Graph Builder pictures data. It does not build the run list."
-              }
-            },
-            {
-              id: "flat",
-              prompt: "Pressure’s profiler trace is flat, and its p-value is 0.62. What may you conclude?",
-              options: [
-                { id: "a", text: "Little evidence that pressure changed the response inside the range you tested" },
-                { id: "b", text: "Pressure never matters at any setting" },
-                { id: "c", text: "The experiment failed and the table should be discarded" }
+                { id: "a", text: "A screening design, classical or custom, to see which factors matter" },
+                { id: "b", text: "A response surface on all eight, looking for a peak" },
+                { id: "c", text: "A correlation matrix of last year's data" }
               ],
               answer: "a",
               why: {
-                a: "Flat, and a large p-value, means little evidence inside the lows and highs you tried. Say it that way.",
-                b: "You did not test outside that range. A flat trace is not a universal claim.",
-                c: "A clear temperature effect and a flat pressure effect is a result. Keep the table."
+                a: "Screening spends the runs on finding the active factors. A surface comes after that list is short.",
+                b: "A surface on eight factors is a large study aimed at a question you have not earned yet.",
+                c: "Historical correlation does not set the factors. It is not an experiment."
+              }
+            },
+            {
+              id: "confirm",
+              prompt: "The profiler suggests a setting that was not one of the runs. What do you do?",
+              options: [
+                { id: "a", text: "Confirm it with new runs before you change the line for good" },
+                { id: "b", text: "Treat the suggestion as already observed" },
+                { id: "c", text: "Average it with the worst run so the result is conservative" }
+              ],
+              answer: "a",
+              why: {
+                a: "A suggested optimum is a prediction inside the region. Confirmation is the check.",
+                b: "The model interpolated or optimized. That row was not in the table.",
+                c: "Averaging with the worst run does not test the prediction."
+              }
+            }
+          ]
+        },
+        {
+          id: "predict",
+          title: "Module 7: Predict, and read the text",
+          lede: "Hold out rows before you believe a model. Trees, forests, and networks are options next to regression. Text is a column you have to turn into terms first.",
+          blocks: [
+            { t: "p", text: "Explanatory modeling asks what the factors are doing. Predictive modeling asks whether the model works on rows it did not fit. The split is the whole module. If you score the same rows you trained on, a flexible model will look brilliant and fail on the next week of data. That is overfitting." },
+            { t: "h", text: "A validation column" },
+            { t: "p", text: "Analyze, then Predictive Modeling, then Make Validation Column. It marks rows as training, validation, and sometimes test. Stratify on an important column so each part of the split still looks like the whole. Fit on training. Choose and compare using validation. Touch the test set once, at the end." },
+            { t: "p", text: "For a continuous response, compare prediction error, not the training R-squared. For a pass-or-fail response, a confusion matrix counts the two kinds of mistake, and an ROC curve shows how those counts change as you move the cutoff. The cutoff is a decision about costs. It is not a property of the data alone. Fit Model still fits the linear or logistic model. You simply tell it about the validation column." },
+            { t: "h", text: "Other models, same split" },
+            { t: "ul", items: [
+              "**Partition** grows a decision tree. A classification tree splits nominal outcomes. A regression tree splits a continuous response. A tree with validation stops before it memorizes the training rows.",
+              "A **bootstrap forest** grows many trees on resampled rows and is a strong way to rank which columns matter.",
+              "A **neural network** stacks layers of simple curves. It can predict well and still be hard to narrate. Fit it with the same validation column. Two layers is already a flexible model. More is not a virtue.",
+              "**Generalized regression** fits by maximum likelihood and can penalize extra terms. The lasso shrinks some coefficients to zero, which is a way to drop factors. Compare that model with the others on the validation rows, not on a story about which one sounds more advanced."
+            ] },
+            { t: "h", text: "Text is unstructured until you curate it" },
+            { t: "p", text: "Analyze, then Text Explorer, and put the comment column in the text role. The platform tokenizes, stems, and drops terms you tell it to drop. Curate the list before you trust a theme: spelling, synonyms, phrases. Then explore. Term lists, phrases, and a singular value view show what people are talking about. Mining the text means using those terms as data, not pasting the comments into a word cloud and stopping." },
+            { t: "note", kind: "note", title: "Where the course lands", text: "You started with a gap and a process map. You looked at the data, separated signal from noise, and only then tested and modeled. Prediction is the same discipline with a holdout set. A model that cannot survive rows it has not seen is a description of the past, not a decision about the next lot." }
+          ],
+          checks: [
+            {
+              id: "holdout",
+              prompt: "A neural net fits the training rows almost perfectly and does poorly on the validation rows. What happened?",
+              options: [
+                { id: "a", text: "It overfit. The validation result is the one that counts." },
+                { id: "b", text: "The training fit proves the network found the true process" },
+                { id: "c", text: "You should add another layer until validation catches up" }
+              ],
+              answer: "a",
+              why: {
+                a: "A flexible model can memorize training rows. Validation is how you see that.",
+                b: "A perfect training fit is a warning, not a proof.",
+                c: "Another layer makes memorizing easier, not harder."
+              }
+            },
+            {
+              id: "tree",
+              prompt: "You want a model that shows which columns split a pass-or-fail outcome. Where do you start?",
+              options: [
+                { id: "a", text: "Analyze, Predictive Modeling, Partition, with the outcome in Y" },
+                { id: "b", text: "A control chart of the outcome codes" },
+                { id: "c", text: "Text Explorer, even though the columns are numeric" }
+              ],
+              answer: "a",
+              why: {
+                a: "Partition builds the classification tree. The splits are the story.",
+                b: "A control chart is about time and stability, not about which factors separate pass from fail.",
+                c: "Text Explorer wants a text column. Numeric factors are not comments."
+              }
+            },
+            {
+              id: "terms",
+              prompt: "Survey comments are one text column. What do you do before you interpret a theme?",
+              options: [
+                { id: "a", text: "Build and curate the term list in Text Explorer" },
+                { id: "b", text: "Average the comments" },
+                { id: "c", text: "Fit a line with the comment column as a continuous factor" }
+              ],
+              answer: "a",
+              why: {
+                a: "Terms, stems, and the words you drop are the data. Curate them before you name a theme.",
+                b: "Text has no mean until you have turned it into terms.",
+                c: "A comment is not a continuous measurement. The platform for it is Text Explorer."
               }
             }
           ]
